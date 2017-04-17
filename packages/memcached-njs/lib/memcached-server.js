@@ -779,6 +779,10 @@ class MemcacheServer {
   }
 
   shutdown() {
+    this._clients.forEach((x) => {
+      x.connection.close();
+    });
+    this._clients.clear();
     this._server.close();
     console.log("server shutdown");
   }
