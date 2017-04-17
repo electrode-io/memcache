@@ -30,12 +30,16 @@ describe("memcache-server", function () {
             client.getP("hello"), client.getP("foo"), client.getP("bar")
           ])
             .then((results) => {
-              expect(results).to.deep.equal(["blahblah", "foofoofoo", "barbarbar"]);
+              expect(results[0].hello).to.equal("blahblah");
+              expect(results[1].foo).to.equal("foofoofoo");
+              expect(results[2].bar).to.equal("barbarbar");
             })
         )
         .then(() =>
           client.getMultiP(["hello", "foo", "bar"])
             .then((result) => {
+              // note: memcached client is broken
+              // each result should have its own cas unique
               expect(result.hello).to.equal("blahblah");
               expect(result.foo).to.equal("foofoofoo");
               expect(result.bar).to.equal("barbarbar");
