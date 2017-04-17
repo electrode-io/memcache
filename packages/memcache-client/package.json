@@ -1,6 +1,6 @@
 {
   "name": "memcache-client",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "NodeJS memcached ASCII protocol client",
   "main": "lib/client.js",
   "scripts": {
@@ -18,7 +18,7 @@
   "author": "Joel Chen <joel123@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "memcache-parser": "^0.1.6",
+    "memcache-parser": "^0.1.7",
     "optional-require": "^1.0.0"
   },
   "optionalDependencies": {
