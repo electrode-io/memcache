@@ -13,8 +13,7 @@ class MemcacheConnection extends MemcacheParser {
   constructor(client) {
     super();
     this.client = client;
-    this._retrieveQueue = [];
-    this._storeQueue = [];
+    this._cmdQueue = [];
     this.ready = false;
     this._connectPromise = undefined;
     this._id = client.socketID++;
@@ -51,6 +50,10 @@ class MemcacheConnection extends MemcacheParser {
     }
   }
 
+  queueCommand(context) {
+    this._cmdQueue.unshift(context);
+  }
+
   processCmd(cmdTokens) {
     const cmd = cmdTokens[0];
 
@@ -60,11 +63,11 @@ class MemcacheConnection extends MemcacheParser {
       const length = +cmdTokens[3];
       this.initiatePending(cmdTokens, length);
     } else if (cmd === "STORED") {
-      this._storeQueue.pop().callback();
+      this._cmdQueue.pop().callback();
     } else if (cmd === "NOT_STORED") {
-      this._storeQueue.pop().callback(!this.client.options.ignoreNotStored && new Error(cmd));
+      this._cmdQueue.pop().callback(!this.client.options.ignoreNotStored && new Error(cmd));
     } else if (cmd === "END") {
-      this._retrieveQueue.pop().callback();
+      this._cmdQueue.pop().callback();
     } else {
       return false;
     }
@@ -73,7 +76,7 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   receiveResult(pending) {
-    const retrieve = this._retrieveQueue[this._retrieveQueue.length - 1];
+    const retrieve = this._cmdQueue[this._cmdQueue.length - 1];
     retrieve.results[pending.cmdTokens[1]] = this.client._unpackValue(pending);
   }
 

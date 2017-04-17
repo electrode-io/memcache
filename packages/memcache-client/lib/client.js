@@ -19,6 +19,34 @@ class MemcacheClient {
     this._packer = new ValuePacker(options.compressor || Zstd);
   }
 
+  set(key, value, options, callback) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    } else if (options === undefined) {
+      options = {};
+    }
+
+    const _set = (c) => this._set(c, key, value, options);
+
+    return nodeify(this._doCmd(_set), callback);
+  }
+
+  get(key, options, callback) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    }
+
+    const _get = (c) => this._get(c, key);
+
+    return nodeify(this._doCmd(_get), callback);
+  }
+
+  //
+  // Internal methods
+  //
+
   _set(conn, key, value, options) {
     const promise = new Promise((resolve, reject) => {
       const store = {
@@ -27,7 +55,7 @@ class MemcacheClient {
         callback: (err) => (err ? reject(err) : resolve())
       };
 
-      conn._storeQueue.unshift(store);
+      conn.queueCommand(store);
     });
 
     //
@@ -45,19 +73,6 @@ class MemcacheClient {
     return promise;
   }
 
-  set(key, value, options, callback) {
-    if (typeof options === "function") {
-      callback = options;
-      options = {};
-    } else if (options === undefined) {
-      options = {};
-    }
-
-    const _set = (c) => this._set(c, key, value, options);
-
-    return nodeify(this._doCmd(_set), callback);
-  }
-
   _get(conn, key) {
     const promise = new Promise((resolve, reject) => {
       const retrieve = {
@@ -70,7 +85,7 @@ class MemcacheClient {
         }
       };
 
-      conn._retrieveQueue.unshift(retrieve);
+      conn.queueCommand(retrieve);
     });
 
     //
@@ -83,17 +98,6 @@ class MemcacheClient {
     conn.socket.write(`get ${Array.isArray(key) ? key.join(" ") : key}\r\n`);
 
     return promise;
-  }
-
-  get(key, options, callback) {
-    if (typeof options === "function") {
-      callback = options;
-      options = {};
-    }
-
-    const _get = (c) => this._get(c, key);
-
-    return nodeify(this._doCmd(_get), callback);
   }
 
   _doCmd(action) {
