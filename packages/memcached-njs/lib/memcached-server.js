@@ -75,6 +75,7 @@ class Connection extends MemcacheParser {
     if (cmd === "set") {
       const length = +cmdTokens[4];
       this.initiatePending(cmdTokens, length);
+      /* istanbul ignore next */
     } else if (cmd === "get" || cmd === "gets") {
       this.server.get(cmdTokens, this);
     } else {
@@ -85,6 +86,7 @@ class Connection extends MemcacheParser {
   }
 
   receiveResult(pending) {
+    /* istanbul ignore next */
     if (pending.cmd === "set") {
       this.server.set(pending, this);
     }

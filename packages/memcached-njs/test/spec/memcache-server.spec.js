@@ -82,4 +82,11 @@ describe("memcache-server", function () {
         .finally(() => server.shutdown());
     });
   });
+
+  it("should log net error", () => {
+    return startServer().then((server) => {
+      server._onError(new Error("test"));
+      return Promise.try(() => server.shutdown());
+    });
+  });
 });
