@@ -52,6 +52,12 @@ describe("memcache client", function () {
         ])
           .then((results) => {
             expect(results).to.deep.equal([text1, "dingle", jsonData, numValue, binValue]);
-          }));
+          }))
+      .then(() =>
+        x.get([key1, key2, key3, key4, key5])
+          .then((results) => {
+            expect(results).to.deep.equal([text1, "dingle", jsonData, numValue, binValue]);
+          })
+      );
   });
 });

@@ -63,7 +63,11 @@ class MemcacheClient {
       const retrieve = {
         key,
         results: {},
-        callback: (err, data) => (err ? reject(err) : resolve(retrieve.results[key]))
+        callback: (err, data) => {
+          if (err) { return reject(err); }
+          const res = retrieve.results;
+          return resolve(Array.isArray(key) ? key.map((k) => res[k]) : res[key]);
+        }
       };
 
       conn._retrieveQueue.unshift(retrieve);
@@ -76,7 +80,7 @@ class MemcacheClient {
     // - <key>* means one or more key strings separated by whitespace.
     //
 
-    conn.socket.write(`get ${key}\r\n`);
+    conn.socket.write(`get ${Array.isArray(key) ? key.join(" ") : key}\r\n`);
 
     return promise;
   }
