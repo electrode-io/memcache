@@ -114,29 +114,27 @@ class MemcacheParser {
       return undefined;
     }
 
-    var copied = 0;
-    var remaining = data.length;
+    var consumed = 0;
     const pending = this._pending;
 
     if (pending.filled < pending.data.length) {
-      copied = data.copy(pending.data, pending.filled, 0);
-      pending.filled += copied;
-      remaining -= copied;
+      consumed = data.copy(pending.data, pending.filled, 0);
+      pending.filled += consumed;
     }
 
     // look for \r\n after the data
-    if (pending.filled === pending.data.length && remaining >= 2) {
-      if (data[copied] !== 13 || data[copied + 1] !== 10) { // CR and LF?
-        this.malformDataStream(pending, data, copied);
-        remaining = 0;
+    if (pending.filled === pending.data.length && data.length - consumed >= 2) {
+      if (data[consumed] !== 13 || data[consumed + 1] !== 10) { // CR and LF?
+        this.malformDataStream(pending, data, consumed);
+        consumed = data.length;
       } else {
-        remaining -= 2; // skip \r\n
+        consumed += 2; // skip \r\n
         this._pending = undefined;
         this.receiveResult(pending);
       }
     }
 
-    return remaining > 0 ? data.slice(data.length - remaining) : undefined;
+    return data.length > consumed ? data.slice(consumed) : undefined;
   }
 
   _checkPartialData(data) {
