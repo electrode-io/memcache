@@ -99,8 +99,12 @@ describe("memcache-parser", function () {
     parser.processCmd = (tokens) => {
       cmdTokens = tokens;
     };
-    parser.onData(Buffer.from("test 0"));
+    parser.onData(Buffer.from("t"));
+    expect(parser._cmdBrkLookupOffset).to.equal(0);
+    parser.onData(Buffer.from("est 0"));
+    expect(parser._cmdBrkLookupOffset).to.equal(5);
     parser.onData(Buffer.from(" 0 100\r"));
+    expect(parser._cmdBrkLookupOffset).to.equal(12);
     parser.onData(Buffer.from("\n"));
     expect(cmdTokens).to.deep.equal(["test", "0", "0", "100"]);
   });

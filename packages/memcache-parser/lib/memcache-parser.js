@@ -21,6 +21,7 @@ class MemcacheParser {
     this._pending = undefined;
     this._partialData = undefined;
     this.logger = logger || defaultLogger;
+    this._cmdBrkLookupOffset = 0;
   }
 
   //
@@ -75,9 +76,11 @@ class MemcacheParser {
   _parseCmd(data) {
     assert(this._pending === undefined, "MemcacheParser: _parseCmd called with pending data");
 
-    const brkIdx = data.indexOf(crlfBuf);
+    const brkIdx = data.indexOf(crlfBuf, this._cmdBrkLookupOffset);
 
     if (brkIdx >= 0) {
+      this._cmdBrkLookupOffset = 0;
+
       const cmdTokens = data.slice(0, brkIdx).toString().split(" ");
       data = data.length === brkIdx + 2
         ? undefined
@@ -95,6 +98,7 @@ class MemcacheParser {
     } else {
       this.logger.debug(`MemcacheParser: _parseCmd no linebreak, storing data for later, length: ${data.length}`);
       this._partialData = data;
+      this._cmdBrkLookupOffset = data.length - 1;
       data = undefined;
     }
 
@@ -152,7 +156,7 @@ class MemcacheParser {
       }
 
       this.logger.debug(`MemcacheParser: concat partial data, length: ` +
-        `${partial.length}, new length ${newLength} ${this._pending}`);
+        `${partial.length}, new length ${newLength} pending ${this._pending}`);
       data = Buffer.concat([partial, data], newLength);
     }
 
