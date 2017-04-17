@@ -1,0 +1,15 @@
+{
+  "name": "memcache",
+  "version": "0.0.1",
+  "description": "memcached client and server in NodeJS",
+  "scripts": {
+    "test": "lerna bootstrap && lerna run test"
+  },
+  "keywords": [],
+  "author": "Joel Chen <joel123@gmail.com>",
+  "license": "Apache-2.0",
+  "private": true,
+  "devDependencies": {
+    "lerna": "^2.0.0-rc.1"
+  }
+}
