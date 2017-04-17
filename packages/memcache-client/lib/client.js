@@ -8,7 +8,7 @@ const MemcacheConnection = require("./connection");
 const nodeify = require("./nodeify");
 const ValuePacker = require("./value-packer");
 
-/* eslint-disable no-bitwise,no-magic-numbers,max-params,no-unused-vars,max-statements,no-var */
+/* eslint-disable no-bitwise,no-magic-numbers,max-params,max-statements,no-var */
 /* eslint max-len:[2,120] */
 
 class MemcacheClient {
@@ -63,7 +63,7 @@ class MemcacheClient {
       const retrieve = {
         key,
         results: {},
-        callback: (err, data) => {
+        callback: (err) => {
           if (err) { return reject(err); }
           const res = retrieve.results;
           return resolve(Array.isArray(key) ? key.map((k) => res[k]) : res[key]);
