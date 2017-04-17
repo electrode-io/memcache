@@ -1,6 +1,6 @@
 "use strict";
 
-/* eslint-disable no-console,no-magic-numbers */
+/* eslint-disable no-console,no-magic-numbers,no-var */
 
 const Net = require("net");
 const MemcacheParser = require("memcache-parser");
@@ -75,7 +75,7 @@ class Connection extends MemcacheParser {
     if (cmd === "set") {
       const length = +cmdTokens[4];
       this.initiatePending(cmdTokens, length);
-    } else if (cmd === "get") {
+    } else if (cmd === "get" || cmd === "gets") {
       this.server.get(cmdTokens, this);
     } else {
       socket.end("CLIENT_ERROR malformed request\r\n");
@@ -134,18 +134,24 @@ class MemcacheServer {
   get(cmdTokens, connection) {
     const cache = this._cache;
     const socket = connection.socket;
-    if (cache.has(cmdTokens[1])) {
-      const e = cache.get(cmdTokens[1]);
-      const msg = `VALUE ${cmdTokens[1]} ${e.flag} ${e.data.length}\r\n`;
-      e.lastFetchId = this._id;
-      console.log("returning", msg);
-      socket.write(msg);
-      socket.write(e.data);
-      socket.write("\r\nEND\r\n");
-    } else {
-      console.log("get", cmdTokens[1], "not found");
-      socket.write("END\r\n");
+    const _get = (key) => {
+      if (cache.has(key)) {
+        const e = cache.get(key);
+        const msg = `VALUE ${key} ${e.flag} ${e.data.length}\r\n`;
+        e.lastFetchId = connection._id;
+        console.log("returning", msg);
+        socket.write(msg);
+        socket.write(e.data);
+        socket.write("\r\n");
+      } else {
+        console.log("get", key, "not found");
+      }
+    };
+    var i;
+    for (i = 1; i < cmdTokens.length; i++) {
+      _get(cmdTokens[i]);
     }
+    socket.write("END\r\n");
   }
 
   set(pending, connection) {

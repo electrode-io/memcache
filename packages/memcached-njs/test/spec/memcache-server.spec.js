@@ -10,23 +10,37 @@ const Net = require("net");
 describe("memcache-server", function () {
   const startClient = (server) => {
     const port = server._server.address().port;
-    return new Memcached(`localhost:${port}`);
+    const client = new Memcached(`localhost:${port}`);
+    client.setP = Promise.promisify(client.set, { context: client });
+    client.getP = Promise.promisify(client.get, { context: client });
+    client.getMultiP = Promise.promisify(client.getMulti, { context: client });
+    return client;
   };
 
   it("should startup, get, and set value with memcached client", () => {
     return startServer().then((server) => {
       const client = startClient(server);
-      return new Promise((resolve, reject) => {
-        client.set("hello", "blahblah", 60, (err) => {
-          if (err) {
-            return reject(err);
-          }
-          return client.get("hello", (gerr, data) => {
-            expect(data).to.equal("blahblah");
-            resolve();
-          });
-        });
-      })
+      return Promise.all([
+        client.setP("hello", "blahblah", 60),
+        client.setP("foo", "foofoofoo", 60),
+        client.setP("bar", "barbarbar", 60)
+      ])
+        .then(() =>
+          Promise.all([
+            client.getP("hello"), client.getP("foo"), client.getP("bar")
+          ])
+            .then((results) => {
+              expect(results).to.deep.equal(["blahblah", "foofoofoo", "barbarbar"]);
+            })
+        )
+        .then(() =>
+          client.getMultiP(["hello", "foo", "bar"])
+            .then((result) => {
+              expect(result.hello).to.equal("blahblah");
+              expect(result.foo).to.equal("foofoofoo");
+              expect(result.bar).to.equal("barbarbar");
+            })
+        )
         .timeout(1500)
         .finally(() => server.shutdown());
     });
