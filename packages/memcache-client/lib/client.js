@@ -19,6 +19,22 @@ class MemcacheClient {
     this._packer = new ValuePacker(options.compressor || Zstd);
   }
 
+  //
+  // Allows you to send any abitrary data you want to the server.
+  // You are responsible for making sure the data contains properly
+  // formed memcached ASCII protocol commands and data.
+  // Any responses from the server will be parsed by the client
+  // and returned as best as it could.
+  //
+  // If data is a function, then it will be called with socket which you can
+  // use to write any data you want else it will be passed to socket.write.
+  //
+  // DO NOT send multiple commands.  Bad things will happen.
+  //
+  send(data, callback) {
+    return nodeify(this._doCmd((c) => this._send(c, data)), callback);
+  }
+
   set(key, value, options, callback) {
     if (typeof options === "function") {
       callback = options;
@@ -46,6 +62,28 @@ class MemcacheClient {
   //
   // Internal methods
   //
+
+  _send(conn, data) {
+    const promise = new Promise((resolve, reject) => {
+      const context = {
+        results: {},
+        callback: (err) => {
+          if (err) return reject(err);
+          return resolve(context.results);
+        }
+      };
+
+      conn.queueCommand(context);
+    });
+
+    if (typeof data === "function") {
+      data(conn.socket);
+    } else {
+      conn.socket.write(data);
+    }
+
+    return promise;
+  }
 
   _set(conn, key, value, options) {
     const promise = new Promise((resolve, reject) => {

@@ -9,8 +9,8 @@ describe("memcache client", function () {
     console.log("unhandledRejection", e);
   });
 
-  // const server = "localhost:8889"
-  const server = "10.1.1.1:11211";
+  const server = "localhost:8889";
+  // const server = "10.1.1.1:11211";
 
   const text1 = `\r\n为推动创造一个自由百科全书目标的实现，维基百科已经形成了一套方针与指引，实际上而言是一套硬性规则，用户强制需要遵循。
 方针是我们认为所应当遵循的标准，指引则用于指导具体情况下标准的执行。它们是社区共识的反映，适用于所有编辑者。
@@ -57,6 +57,26 @@ describe("memcache client", function () {
         x.get([key1, key2, key3, key4, key5])
           .then((results) => {
             expect(results).to.deep.equal([text1, "dingle", jsonData, numValue, binValue]);
+          })
+      )
+      .then(() =>
+        x.send(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`)
+          .then((results) => {
+            expect(results[key1]).to.equal(text1);
+            expect(results[key2]).to.equal("dingle");
+            expect(results[key3]).to.deep.equal(jsonData);
+            expect(results[key4]).to.equal(numValue);
+            expect(results[key5]).to.deep.equal(binValue);
+          })
+      )
+      .then(() =>
+        x.send((socket) => socket.write(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`))
+          .then((results) => {
+            expect(results[key1]).to.equal(text1);
+            expect(results[key2]).to.equal("dingle");
+            expect(results[key3]).to.deep.equal(jsonData);
+            expect(results[key4]).to.equal(numValue);
+            expect(results[key5]).to.deep.equal(binValue);
           })
       );
   });
