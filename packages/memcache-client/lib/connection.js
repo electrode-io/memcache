@@ -84,7 +84,7 @@ class MemcacheConnection extends MemcacheParser {
     this[`cmd_${cmdTokens[0]}`](cmdTokens);
   }
 
-  cmdAction_UNKNOWN(cmdTokens) {
+  cmdAction_undefined(cmdTokens) {
     // incr/decr response
     // - <value>\r\n , where <value> is the new value of the item's data,
     //   after the increment/decrement operation was carried out.
@@ -107,14 +107,7 @@ class MemcacheConnection extends MemcacheParser {
 
   processCmd(cmdTokens) {
     const action = cmdActions[cmdTokens[0]];
-
-    if (action === undefined) {
-      return this.cmdAction_UNKNOWN(cmdTokens);
-    } else {
-      this[`cmdAction_${action}`](cmdTokens);
-    }
-
-    return true;
+    return this[`cmdAction_${action}`](cmdTokens);
   }
 
   receiveResult(pending) {
