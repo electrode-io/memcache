@@ -8,14 +8,36 @@ const expect = chai.expect;
 const Promise = require("bluebird");
 const Fs = require("fs");
 const Path = require("path");
+const memcached = require("memcached-njs");
 
 describe("memcache client", function () {
   process.on("unhandledRejection", (e) => {
     console.log("unhandledRejection", e);
   });
 
-  // const server = "localhost:8889";
-  const server = "10.1.1.1:11211";
+  let memcachedServer;
+  let server;
+
+  before((done) => {
+    if (process.env.MEMCACHED_SERVER) {
+      server = process.env.MEMCACHED_SERVER;
+      done();
+    } else {
+      memcachedServer = memcached.startServer().then((ms) => {
+        server = `localhost:${ms._server.address().port}`;
+        memcachedServer = ms;
+        done();
+      })
+        .catch(done);
+    }
+  });
+
+  after((done) => {
+    if (memcachedServer) {
+      memcachedServer.shutdown();
+      done();
+    }
+  });
 
   const crlfify = (m) => m.replace(/\r?\n/g, "\r\n");
 

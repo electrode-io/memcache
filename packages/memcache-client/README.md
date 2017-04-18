@@ -2,7 +2,7 @@
 
 NodeJS memcached client with the most efficient ASCII protocol parser.
 
-Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to power the <http://www.walmart.com> eComerce site.
+Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to power the <http://www.walmart.com> eCommerce site.
 
 ## Features
 
