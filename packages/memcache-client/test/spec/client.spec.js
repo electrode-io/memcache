@@ -35,8 +35,8 @@ describe("memcache client", function () {
   after((done) => {
     if (memcachedServer) {
       memcachedServer.shutdown();
-      done();
     }
+    done();
   });
 
   const crlfify = (m) => m.replace(/\r?\n/g, "\r\n");
@@ -320,5 +320,13 @@ describe("memcache client", function () {
       .then(() => x.get(key))
       .then((v) => expect(v.value).to.deep.equal(poem1))
       .finally(() => x.shutdown());
+  });
+
+  it("should retrieve version", () => {
+    const x = new MemcacheClient({ server });
+    return x.cmd("version").then((v) => {
+      expect(v[0]).to.equal("VERSION");
+      expect(v[1]).to.be.not.empty;
+    });
   });
 });
