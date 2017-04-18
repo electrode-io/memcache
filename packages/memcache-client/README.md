@@ -2,6 +2,8 @@
 
 NodeJS memcached client with the most efficient ASCII protocol parser.
 
+Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to power the <http://www.walmart.com> eComerce site.
+
 ## Features
 
 -   Very efficient memcached ASCII protocol parser by using only [NodeJS Buffer APIs](https://nodejs.org/api/buffer.html).
@@ -17,32 +19,79 @@ $ npm i memcache-client --save
 
 ```js
 const MemcacheClient = require("memcache-client");
+const server = "localhost:11211";
 
-const client = MemcacheClient({server: "localhost:11211"});
+// create a normal client
+
+const client = MemcacheClient({ server });
+
+// Create a client that ignores NOT_STORED response (for McRouter AllAsync mode)
+
+const mrClient = new MemcacheClient({ server, ignoreNotStored: true });
 
 // with callback
 
-client.set("key", "data", (err) => { console.log(err); });
-client.get("key", (err, data) => { console.log(data.value); });
+client.set("key", "data", (err, r) => { expect(r).to.equal(["STORED"]); });
+client.get("key", (err, data) => { expect(data.value).to.equal("data"); });
 
 // with promise
 
-client.set("key", "data").then(() => ...);
-client.get("key").then((data) => console.log(data.value));
+client.set("key", "data").then((r) => expect(r).to.equal(["STORED"]));
+client.get("key").then((data) => expect(data.value).to.equal("data"));
 
 // concurrency using promise
 
-Promise.all([client.set("key1", "data1"), client.set("key2", "data2")]);
-Promise.all([client.get("key1"), client.get("key2")]);
+Promise.all([client.set("key1", "data1"), client.set("key2", "data2")])
+  .then((r) => expect(r).to.deep.equal(["STORED", "STORED"]));
+Promise.all([client.get("key1"), client.get("key2")])
+  .then((r) => {
+    expect(r[0].value).to.equal("data1");
+    expect(r[0].value).to.equal("data2");
+  });
 
 // get multiple keys
 
 client.get(["key1", "key2"]).then((results) => {
-  console.log("key1:", results["key1"].value);
-  console.log("key2:", results["key2"].value);
+  expect(results["key1"].value).to.equal("data1");
+  expect(results["key2"].value).to.equal("data2");
 });
+
+// gets and cas
+
+client.gets("key1").then((v) => client.cas("key1", "casData", { casUniq: v.casUniq }));
 
 // enable compression (if data size > 100 bytes)
 
-client.set("key", data, {compress: true})
+client.set("key", data, { compress: true }).then((r) => expect(r).to.equal(["STORED"]));
+
+// fire and forget
+
+client.set("key", data, { noreply: true });
+
+// send any arbitrary command (\r\n will be appended automatically)
+
+client.cmd("stats").then((r) => { console.log(r.STAT) });
+client.set("foo", "10", { noreply: true });
+client.cmd("incr foo 5").then((v) => expect(v).to.equal(15));
+
+// send any arbitrary data (remember \r\n)
+
+client.send("set foo 0 0 5\r\nhello\r\n").then((r) => expect(r).to.equal(["STORED"]));
 ```
+
+## Commands with a method
+
+All take an optional `callback`.  If it's not provided then all return a `Promise`.
+
+-   `client.get(key, [callback])` or `client.get([key1, key2], [callback])`
+-   `client.gets(key, [callback])` or `client.gets([key1, key2], [callback])`
+-   `client.set(key, data, [options], [callback])`
+-   `client.add(key, data, [options], [callback])`
+-   `client.replace(key, data, [options], [callback])`
+-   `client.append(key, data, [options], [callback])`
+-   `client.prepend(key, data, [options], [callback])`
+-   `client.cas(key, data, options, [callback])`
+
+## License
+
+Apache-2.0 © [Joel Chen](https://github.com/jchip)
