@@ -49,7 +49,7 @@ class MemcacheClient {
       options = {};
     }
 
-    return nodeify(this.xsend(data, options), callback);
+    return this._callbackSend(data, options, callback);
   }
 
   // the promise only version of send
@@ -129,7 +129,7 @@ class MemcacheClient {
       socket.write("\r\n");
     };
 
-    return this.send(_data, options, callback);
+    return this._callbackSend(_data, options, callback);
   }
 
   get(key, options, callback) {
@@ -188,6 +188,11 @@ class MemcacheClient {
     }
 
     return promise;
+  }
+
+  // internal send that expects all params passed (even if they are undefined)
+  _callbackSend(data, options, callback) {
+    return nodeify(this.xsend(data, options), callback);
   }
 
   _doCmd(action) {
