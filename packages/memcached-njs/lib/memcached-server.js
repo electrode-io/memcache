@@ -17,7 +17,8 @@ const replies = {
   EXISTS: "EXISTS",
   NOT_FOUND: "NOT_FOUND",
   DELETED: "DELETED",
-  OK: "OK"
+  OK: "OK",
+  CLIENT_ERROR: "CLIENT_ERROR"
 };
 
 class Connection extends MemcacheParser {
@@ -411,12 +412,41 @@ class MemcacheServer {
   // - <value>\r\n , where <value> is the new value of the item's data,
   //   after the increment/decrement operation was carried out.
 
-  cmd_incr(cmdTokens, connection) {
+  _IncrDecr(cmdTokens, connection, sign) {
+    const key = cmdTokens[1];
+    if (!this._cache.has(key)) {
+      this._reply(connection, cmdTokens, replies.NOT_FOUND);
+    } else {
+      const delta = cmdTokens[2];
+      if (delta && delta.match(/[+-]?[0-9]/g)) {
+        const e = this._cache.get(key);
+        const value = e.data.toString();
+        if (value && value.match(/[+-]?[0-9]/g)) {
+          const a = +value;
+          const b = +delta * sign;
+          let x = a + b;
+          if (x < 0) {
+            x = 0;
+          }
+          e.data = Buffer.from(x.toString());
+          this._reply(connection, cmdTokens, e.data);
+        } else {
+          this._reply(connection, cmdTokens,
+            `${replies.CLIENT_ERROR} cannot increment or decrement non-numeric value`);
+        }
+      } else {
+        this._reply(connection, cmdTokens, `${replies.CLIENT_ERROR} invalid numeric delta argument`);
+      }
+    }
 
   }
 
-  cmd_decr(cmdTokens, connection) {
+  cmd_incr(cmdTokens, connection) {
+    return this._IncrDecr(cmdTokens, connection, 1);
+  }
 
+  cmd_decr(cmdTokens, connection) {
+    return this._IncrDecr(cmdTokens, connection, -1);
   }
 
   // Touch
