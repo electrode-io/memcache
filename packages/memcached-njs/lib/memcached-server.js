@@ -736,7 +736,7 @@ class MemcacheServer {
   // END\r\n
 
   cmd_stats(cmdTokens, connection) {
-    connection.send("STAT foo bar\r\nEND\r\n");
+    connection.send("STAT foo bar\r\nSTAT hello world\r\nEND\r\n");
   }
 
   // Other commands
