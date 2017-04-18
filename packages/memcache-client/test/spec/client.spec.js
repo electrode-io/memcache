@@ -257,4 +257,14 @@ describe("memcache client", function () {
       })
       .finally(() => x.shutdown());
   });
+
+  it("should fire and forget if noreply is set", () => {
+    const x = new MemcacheClient({ server });
+    const key = `poem1_${Date.now()}`;
+    return Promise.try(() => x.set(key, poem1, { noreply: true }))
+      .then((v) => expect(v).to.be.undefined)
+      .then(() => x.get(key))
+      .then((v) => expect(v.value).to.deep.equal(poem1))
+      .finally(() => x.shutdown());
+  });
 });
