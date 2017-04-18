@@ -57,6 +57,15 @@ class MemcacheClient {
     return this._doCmd((c) => this._send(c, data, options || {}));
   }
 
+  // a convenient method to send a single line as a command to the server
+  // with \r\n appended for you automatically
+  cmd(data, options, callback) {
+    return this.send((socket) => {
+      socket.write(data);
+      socket.write("\r\n");
+    }, options, callback);
+  }
+
   // "set" means "store this data".
   set(key, value, options, callback) {
     return this.store("set", key, value, options, callback);

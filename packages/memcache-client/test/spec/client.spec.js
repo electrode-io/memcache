@@ -270,9 +270,9 @@ describe("memcache client", function () {
     const x = new MemcacheClient({ server });
     const key = `num_${Date.now()}`;
     return Promise.try(() => x.set(key, "12345"))
-      .then(() => x.send(`incr ${key} 5\r\n`))
+      .then(() => x.cmd(`incr ${key} 5`))
       .then((v) => expect(v).to.equal("12350"))
-      .then(() => x.send(`decr ${key} 12355\r\n`))
+      .then(() => x.cmd(`decr ${key} 12355`))
       .then((v) => expect(v).to.equal("0"))
       .finally(() => x.shutdown());
   });
@@ -280,7 +280,7 @@ describe("memcache client", function () {
   it("should receive stats", () => {
     const x = new MemcacheClient({ server });
     const key = `num_${Date.now()}`;
-    return Promise.try(() => x.send(`stats\r\n`))
+    return Promise.try(() => x.cmd(`stats`))
       .then((r) => {
         const stat = r.STAT;
         expect(stat).to.be.ok;
