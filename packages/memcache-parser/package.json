@@ -1,6 +1,6 @@
 {
   "name": "memcache-parser",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "A very efficient NodeJS memcached ASCII Protocol parser by using only Buffer APIs",
   "main": "lib/memcache-parser.js",
   "scripts": {
