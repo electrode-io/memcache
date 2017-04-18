@@ -37,12 +37,24 @@ class MemcacheClient {
   //
   // DO NOT send multiple commands in a single call.  Bad things will happen.
   //
-  send(data, callback) {
-    return nodeify(this.xsend(data), callback);
+  // Set options.noreply if you want to fire and forget.  Note that this
+  // doesn't apply if you send a command like get/gets/stats, which don't
+  // have the noreply option.
+  //
+  send(data, options, callback) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    } else if (options === undefined) {
+      options = {};
+    }
+
+    return nodeify(this.xsend(data, options), callback);
   }
 
-  xsend(data) {
-    return this._doCmd((c) => this._send(c, data));
+  // the promise only version of send
+  xsend(data, options) {
+    return this._doCmd((c) => this._send(c, data, options || {}));
   }
 
   // "set" means "store this data".
@@ -128,6 +140,7 @@ class MemcacheClient {
     return nodeify(this.xretrieve(cmd, key, options), callback);
   }
 
+  // the promise only version of retrieve
   xretrieve(cmd, key) {
     //
     // get <key>*\r\n
@@ -144,18 +157,20 @@ class MemcacheClient {
   // Internal methods
   //
 
-  _send(conn, data) {
-    const promise = new Promise((resolve, reject) => {
-      const context = {
-        results: {},
-        callback: (err, result) => {
-          if (err) return reject(err);
-          return resolve(result || context.results);
-        }
-      };
+  _send(conn, data, options) {
+    const promise = options.noreply
+      ? Promise.resolve()
+      : new Promise((resolve, reject) => {
+        const context = {
+          results: {},
+          callback: (err, result) => {
+            if (err) return reject(err);
+            return resolve(result || context.results);
+          }
+        };
 
-      conn.queueCommand(context);
-    });
+        conn.queueCommand(context);
+      });
 
     if (typeof data === "function") {
       data(conn.socket);
