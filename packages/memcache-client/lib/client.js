@@ -7,6 +7,7 @@ const Zstd = optionalRequire("node-zstd", false);
 const MemcacheConnection = require("./connection");
 const nodeify = require("./nodeify");
 const ValuePacker = require("./value-packer");
+const nullLogger = require("./null-logger");
 
 /* eslint-disable no-bitwise,no-magic-numbers,max-params,max-statements,no-var */
 /* eslint max-len:[2,120] */
@@ -17,6 +18,7 @@ class MemcacheClient {
     this.options = options;
     this.socketID = 1;
     this._packer = new ValuePacker(options.compressor || Zstd);
+    this._logger = options.logger || nullLogger;
   }
 
   shutdown() {

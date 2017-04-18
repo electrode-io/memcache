@@ -12,7 +12,7 @@ const cmdActions = require("./cmd-actions");
 
 class MemcacheConnection extends MemcacheParser {
   constructor(client) {
-    super();
+    super(client._logger);
     this.client = client;
     this._cmdQueue = [];
     this.ready = false;
@@ -69,10 +69,11 @@ class MemcacheConnection extends MemcacheParser {
   cmdAction_RESULT(cmdTokens) {
     const retrieve = this._cmdQueue[this._cmdQueue.length - 1];
     const cmd = cmdTokens[0];
-    if (!retrieve[cmd]) {
-      retrieve[cmd] = [];
+    const results = retrieve.results;
+    if (!results[cmd]) {
+      results[cmd] = [];
     }
-    retrieve[cmd].push(cmdTokens.slice(1));
+    results[cmd].push(cmdTokens.slice(1));
   }
 
   cmdAction_SINGLE_RESULT(cmdTokens) {

@@ -244,4 +244,17 @@ describe("memcache client", function () {
       .then((v) => expect(v).to.equal("0"))
       .finally(() => x.shutdown());
   });
+
+  it("should receive stats", () => {
+    const x = new MemcacheClient({ server });
+    const key = `num_${Date.now()}`;
+    return Promise.try(() => x.send(`stats\r\n`))
+      .then((r) => {
+        const stat = r.STAT;
+        expect(stat).to.be.ok;
+        expect(stat).to.be.an("array");
+        expect(stat).to.not.be.empty;
+      })
+      .finally(() => x.shutdown());
+  });
 });
