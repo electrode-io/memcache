@@ -120,6 +120,12 @@ describe("memcache client", function () {
 
 `);
 
+  it("should use established connection", () => {
+    const x = new MemcacheClient({ server });
+    x.connection = "test";
+    return x._connect(server).then((v) => expect(v).to.equal("test"));
+  });
+
   it("should set and get multiple keys concurrently", () => {
     const key1 = "text1维基百科";
     const key2 = "blah";
