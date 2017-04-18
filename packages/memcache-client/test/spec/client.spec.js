@@ -219,4 +219,18 @@ describe("memcache client", function () {
       .then((r) => expect(r.value).to.equal(poem3))
       .finally(() => x.shutdown());
   });
+
+  it("should fail cas with an outdated id", () => {
+    const x = new MemcacheClient({ server });
+    const key = `poem_${Date.now()}`;
+    let casError;
+    return Promise.try(() => x.set(key, poem4))
+      .then(() => x.gets(key))
+      .tap((r) => expect(r.value).to.equal(poem4))
+      .tap((r) => expect(r.casUniq).to.be.ok)
+      .then((r) => x.cas(key, poem3, { casUniq: r.casUniq + 500 }))
+      .catch((err) => (casError = err))
+      .then(() => expect(casError.message).to.equal("EXISTS"))
+      .finally(() => x.shutdown());
+  });
 });
