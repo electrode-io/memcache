@@ -35,28 +35,40 @@ class MemcacheClient {
     return nodeify(this._doCmd((c) => this._send(c, data)), callback);
   }
 
+  // "set" means "store this data".
   set(key, value, options, callback) {
-    if (typeof options === "function") {
-      callback = options;
-      options = {};
-    } else if (options === undefined) {
-      options = {};
-    }
+    return this._store("set", key, value, options, callback);
+  }
 
-    const lifetime = options.lifetime !== undefined ? options.lifetime : (this.options.lifetime || 60);
-    const packed = this._packer.pack(value, options.compress === true);
+  // "add" means "store this data, but only if the server *doesn't* already
+  // hold data for this key".
+  add(key, value, options, callback) {
+    return this._store("add", key, value, options, callback);
+  }
 
-    //
-    // store commands
-    // <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
-    //
-    const _data = (socket) => {
-      socket.write(`set ${key} ${packed.flag} ${lifetime} ${Buffer.byteLength(packed.data)}\r\n`);
-      socket.write(packed.data);
-      socket.write("\r\n");
-    };
+  // "replace" means "store this data, but only if the server *does*
+  // already hold data for this key".
+  replace(key, value, options, callback) {
+    return this._store("replace", key, value, options, callback);
+  }
 
-    return this.send(_data, callback);
+  // "append" means "add this data to an existing key after existing data".
+  append(key, value, options, callback) {
+    return this._store("append", key, value, options, callback);
+  }
+
+  // "prepend" means "add this data to an existing key before existing data".
+  prepend(key, value, options, callback) {
+    return this._store("prepend", key, value, options, callback);
+  }
+
+  // "cas" is a check and set operation which means "store this data but
+  // only if no one else has updated since I last fetched it."
+  //
+  // cas unique must be passed in options.casUniq
+  //
+  cas(key, value, options, callback) {
+    return this._store("cas", key, value, options, callback);
   }
 
   get(key, options, callback) {
@@ -65,17 +77,17 @@ class MemcacheClient {
       options = {};
     }
 
-    const arrayKey = Array.isArray(key);
     //
     // get <key>*\r\n
     // gets <key>*\r\n
     //
     // - <key>* means one or more key strings separated by whitespace.
     //
-    return nodeify(
-      this.send(`get ${arrayKey ? key.join(" ") : key}\r\n`)
-        .then((res) => arrayKey ? res : res[key]),
-      callback);
+    const promise = Array.isArray(key)
+      ? this.send(`get ${key.join(" ")}\r\n`)
+      : this.send(`get ${key}\r\n`).then(((r) => r[key]));
+
+    return nodeify(promise, callback);
   }
 
   //
@@ -112,6 +124,33 @@ class MemcacheClient {
     } else {
       return action(this.connection);
     }
+  }
+
+  _store(cmd, key, value, options, callback) {
+    if (typeof options === "function") {
+      callback = options;
+      options = {};
+    } else if (options === undefined) {
+      options = {};
+    }
+
+    const lifetime = options.lifetime !== undefined ? options.lifetime : (this.options.lifetime || 60);
+    const packed = this._packer.pack(value, options.compress === true);
+    const casUniq = options.casUniq ? ` ${options.casUniq}` : "";
+    const noreply = options.noreply ? ` noreply` : "";
+    const bytes = Buffer.byteLength(packed.data);
+
+    //
+    // store commands
+    // <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
+    //
+    const _data = (socket) => {
+      socket.write(`${cmd} ${key} ${packed.flag} ${lifetime} ${bytes}${casUniq}${noreply}\r\n`);
+      socket.write(packed.data);
+      socket.write("\r\n");
+    };
+
+    return this.send(_data, callback);
   }
 
   _connect(server) {
