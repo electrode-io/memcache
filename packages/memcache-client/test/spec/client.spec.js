@@ -139,9 +139,34 @@ describe("memcache client", function () {
       x.get(key, (gerr, data) => {
         expect(gerr).to.be.not.ok;
         expect(data.value).to.equal("bar");
+        x.shutdown();
         done();
       });
     });
+  });
+
+  it("should use callback for send", (done) => {
+    const x = new MemcacheClient({ server });
+    const key = `foo_${Date.now()}`;
+    x.send(`set ${key} 0 0 5\r\nhello\r\n`, "bar", (err, data) => {
+      expect(err).to.be.not.ok;
+      expect(data).to.deep.equal(["STORED"]);
+      x.send(`get ${key}\r\n`, (gerr, v) => {
+        expect(gerr).to.be.not.ok;
+        expect(v[key].value).to.equal("hello");
+        x.shutdown();
+        done();
+      });
+    });
+  });
+
+  it("should set value with custom lifetime", () => {
+    const x = new MemcacheClient({ server });
+    let testOptions;
+    x._callbackSend = (data, options) => (testOptions = options);
+    const key = `foo_${Date.now()}`;
+    x.set(key, "bar", { lifetime: 500 });
+    expect(testOptions.lifetime).to.equal(500);
   });
 
   it("should set and get multiple keys concurrently", () => {
