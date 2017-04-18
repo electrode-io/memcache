@@ -5,9 +5,10 @@ const assert = require("assert");
 const optionalRequire = require("optional-require")(require);
 const Promise = optionalRequire("bluebird", { message: false, default: global.Promise });
 const MemcacheParser = require("memcache-parser");
+const cmdActions = require("./cmd-actions");
 
-/* eslint-disable no-bitwise,no-magic-numbers,max-params,no-unused-vars,max-statements,no-var */
-/* eslint-disable no-console */
+/* eslint-disable no-bitwise,no-magic-numbers,max-params,no-unused-vars */
+/* eslint-disable no-console,camelcase,max-statements,no-var */
 
 class MemcacheConnection extends MemcacheParser {
   constructor(client) {
@@ -54,25 +55,60 @@ class MemcacheConnection extends MemcacheParser {
     this._cmdQueue.unshift(context);
   }
 
-  processCmd(cmdTokens) {
-    const cmd = cmdTokens[0];
+  cmdAction_OK(cmdTokens) {
+    this._cmdQueue.pop().callback(null, cmdTokens);
+  }
 
-    if (cmd === "VALUE") {
-      // const key = cmdTokens[1];
-      // const flag = +cmdTokens[2];
-      const length = +cmdTokens[3];
-      this.initiatePending(cmdTokens, length);
-    } else if (cmd === "STORED") {
-      this._cmdQueue.pop().callback();
-    } else if (cmd === "NOT_STORED") {
-      this._cmdQueue.pop().callback(!this.client.options.ignoreNotStored && new Error(cmd));
-    } else if (cmd === "END") {
-      this._cmdQueue.pop().callback();
+  cmdAction_ERROR(cmdTokens) {
+    const msg = (m) => (m ? ` ${m}` : "");
+    const error = new Error(`${cmdTokens[0]}${msg(cmdTokens.slice(1).join(" "))}`);
+    error.cmdTokens = cmdTokens;
+    this._cmdQueue.pop().callback(error);
+  }
+
+  cmdAction_RESULT(cmdTokens) {
+    const retrieve = this._cmdQueue[this._cmdQueue.length - 1];
+    const cmd = cmdTokens[0];
+    if (!retrieve[cmd]) {
+      retrieve[cmd] = [];
+    }
+    retrieve[cmd].push(cmdTokens.slice(1));
+  }
+
+  cmdAction_SINGLE_RESULT(cmdTokens) {
+    this.cmdAction_OK(cmdTokens);
+  }
+
+  cmdAction_SELF(cmdTokens) {
+    this[`cmd_${cmdTokens[0]}`](cmdTokens);
+  }
+
+  cmd_VALUE(cmdTokens) {
+    this.initiatePending(cmdTokens, +cmdTokens[3]);
+  }
+
+  processCmd(cmdTokens) {
+
+    // TODO: deal with this:
+    //
+    // Increment/Decrement
+    // -------------------
+    //
+    // Response:
+    //
+    // - <value>\r\n , where <value> is the new value of the item's data,
+    //   after the increment/decrement operation was carried out.
+
+    const cmd = cmdTokens[0];
+    const action = cmdActions[cmd];
+    if (action === undefined) {
+      console.log("No command action defined for", cmdTokens);
     } else {
-      return false;
+      this[`cmdAction_${action}`](cmdTokens);
+      return true;
     }
 
-    return true;
+    return false;
   }
 
   receiveResult(pending) {
