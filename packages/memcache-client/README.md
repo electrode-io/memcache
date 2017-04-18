@@ -1,10 +1,10 @@
 # memcache-client
 
-A NodeJS memcached client that implements the ASCII protocol.
+NodeJS memcached client with the most efficient ASCII protocol parser.
 
 ## Features
 
--   Very efficient memcached ASCII protocol parser by using only NodeJS Buffer APIs
+-   Very efficient memcached ASCII protocol parser by using only [NodeJS Buffer APIs](https://nodejs.org/api/buffer.html).
 -   Optional compression for the data before sending to memcached
 
 ## Install
