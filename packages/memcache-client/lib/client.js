@@ -18,7 +18,7 @@ class MemcacheClient {
     this.options = options;
     this.socketID = 1;
     this._packer = new ValuePacker(options.compressor || Zstd);
-    this._logger = options.logger || nullLogger;
+    this._logger = options.logger !== undefined ? options.logger : nullLogger;
   }
 
   shutdown() {
