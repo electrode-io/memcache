@@ -131,6 +131,19 @@ describe("memcache client", function () {
     return x._connect(server).then((v) => expect(v).to.equal("test"));
   });
 
+  it("should use callback on get and set", (done) => {
+    const x = new MemcacheClient({ server });
+    const key = `foo_${Date.now()}`;
+    x.set(key, "bar", (err) => {
+      expect(err).to.be.not.ok;
+      x.get(key, (gerr, data) => {
+        expect(gerr).to.be.not.ok;
+        expect(data.value).to.equal("bar");
+        done();
+      });
+    });
+  });
+
   it("should set and get multiple keys concurrently", () => {
     const key1 = "text1维基百科";
     const key2 = "blah";
