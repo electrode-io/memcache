@@ -30,9 +30,9 @@ describe("memcache-server", function () {
             client.getP("hello"), client.getP("foo"), client.getP("bar")
           ])
             .then((results) => {
-              expect(results[0].hello).to.equal("blahblah");
-              expect(results[1].foo).to.equal("foofoofoo");
-              expect(results[2].bar).to.equal("barbarbar");
+              expect(results[0]).to.equal("blahblah");
+              expect(results[1]).to.equal("foofoofoo");
+              expect(results[2]).to.equal("barbarbar");
             })
         )
         .then(() =>

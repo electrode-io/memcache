@@ -69,6 +69,7 @@ class Connection extends MemcacheParser {
 class MemcacheServer {
   constructor(options) {
     this.clientID = 1;
+    this._casID = 1;
     this._cache = new Map();
     this._clients = new Map();
     this.options = options;
@@ -99,6 +100,10 @@ class MemcacheServer {
 
   getNewClientID() {
     return this.clientID++;
+  }
+
+  getNextCasID() {
+    return this._casID++;
   }
 
   newConnection(socket) {
@@ -207,7 +212,7 @@ class MemcacheServer {
       flag: pending.cmdTokens[2],
       data: pending.data,
       lifetime: +pending.cmdTokens[3],
-      casId: Date.now()
+      casId: this.getNextCasID()
     };
     this._cache.set(pending.cmdTokens[1], e);
     this._reply(connection, pending.cmdTokens, replies.STORED);
@@ -248,7 +253,7 @@ class MemcacheServer {
     if (this._cache.has(key)) {
       const e = this._cache.get(key);
       e.data = Buffer.concat([e.data, pending.data]);
-      e.casId = Date.now();
+      e.casId = this.getNextCasID();
       this._reply(connection, pending.cmdTokens, replies.STORED);
     } else {
       this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
@@ -261,7 +266,7 @@ class MemcacheServer {
     if (this._cache.has(key)) {
       const e = this._cache.get(key);
       e.data = Buffer.concat([pending.data, e.data]);
-      e.casId = Date.now();
+      e.casId = this.getNextCasID();
       this._reply(connection, pending.cmdTokens, replies.STORED);
     } else {
       this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
@@ -286,7 +291,7 @@ class MemcacheServer {
       this._reply(connection, pending.cmdTokens, replies.NOT_FOUND);
     } else {
       const e = this._cache.get(key);
-      if (e.casId === pending.cmdTokens[4]) {
+      if (`${e.casId}` === pending.cmdTokens[5]) {
         this._store(pending, connection);
       } else {
         this._reply(connection, pending.cmdTokens, replies.EXISTS);
@@ -338,7 +343,8 @@ class MemcacheServer {
     const _get = (key) => {
       if (cache.has(key)) {
         const e = cache.get(key);
-        const msg = `VALUE ${key} ${e.flag} ${e.data.length} ${e.casId}\r\n`;
+        const casId = cmdTokens[0] === "gets" ? ` ${e.casId}` : "";
+        const msg = `VALUE ${key} ${e.flag} ${e.data.length}${casId}\r\n`;
         console.log("returning", msg);
         connection.send(msg);
         connection.send(e.data);
