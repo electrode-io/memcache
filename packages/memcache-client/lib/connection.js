@@ -83,32 +83,37 @@ class MemcacheConnection extends MemcacheParser {
     this[`cmd_${cmdTokens[0]}`](cmdTokens);
   }
 
+  cmdAction_UNKNOWN(cmdTokens) {
+    // incr/decr response
+    // - <value>\r\n , where <value> is the new value of the item's data,
+    //   after the increment/decrement operation was carried out.
+    if (cmdTokens.length === 1 && cmdTokens[0].match(/[+-]?[0-9]+/)) {
+      this._cmdQueue.pop().callback(null, cmdTokens[0]);
+      return true;
+    } else {
+      console.log("No command action defined for", cmdTokens);
+    }
+    return false;
+  }
+
   cmd_VALUE(cmdTokens) {
     this.initiatePending(cmdTokens, +cmdTokens[3]);
   }
 
+  cmd_END(cmdTokens) {
+    this._cmdQueue.pop().callback();
+  }
+
   processCmd(cmdTokens) {
+    const action = cmdActions[cmdTokens[0]];
 
-    // TODO: deal with this:
-    //
-    // Increment/Decrement
-    // -------------------
-    //
-    // Response:
-    //
-    // - <value>\r\n , where <value> is the new value of the item's data,
-    //   after the increment/decrement operation was carried out.
-
-    const cmd = cmdTokens[0];
-    const action = cmdActions[cmd];
     if (action === undefined) {
-      console.log("No command action defined for", cmdTokens);
+      return this.cmdAction_UNKNOWN(cmdTokens);
     } else {
       this[`cmdAction_${action}`](cmdTokens);
-      return true;
     }
 
-    return false;
+    return true;
   }
 
   receiveResult(pending) {

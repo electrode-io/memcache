@@ -8,7 +8,7 @@ const ACTION_SELF = "SELF";
 
 module.exports = {
   OK: ACTION_OK,
-  END: ACTION_OK,
+  END: ACTION_SELF,
   DELETED: ACTION_OK,
   TOUCHED: ACTION_OK,
   STORED: ACTION_OK,

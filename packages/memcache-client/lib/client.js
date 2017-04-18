@@ -96,7 +96,6 @@ class MemcacheClient {
     const bytes = Buffer.byteLength(packed.data);
     const msg = `${cmd} ${key} ${packed.flag} ${lifetime} ${bytes}${casUniq}${noreply}\r\n`;
 
-    console.log("issuing store command:", msg); // eslint-disable-line
     //
     // store commands
     // <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
@@ -147,9 +146,9 @@ class MemcacheClient {
     const promise = new Promise((resolve, reject) => {
       const context = {
         results: {},
-        callback: (err) => {
+        callback: (err, result) => {
           if (err) return reject(err);
-          return resolve(context.results);
+          return resolve(result || context.results);
         }
       };
 

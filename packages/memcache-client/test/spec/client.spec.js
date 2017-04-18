@@ -12,8 +12,8 @@ describe("memcache client", function () {
     console.log("unhandledRejection", e);
   });
 
-  const server = "localhost:8889";
-  // const server = "10.1.1.1:11211";
+  // const server = "localhost:8889";
+  const server = "10.1.1.1:11211";
 
   const crlfify = (m) => m.replace(/\r?\n/g, "\r\n");
 
@@ -231,6 +231,17 @@ describe("memcache client", function () {
       .then((r) => x.cas(key, poem3, { casUniq: r.casUniq + 500 }))
       .catch((err) => (casError = err))
       .then(() => expect(casError.message).to.equal("EXISTS"))
+      .finally(() => x.shutdown());
+  });
+
+  it("should incr and decr value", () => {
+    const x = new MemcacheClient({ server });
+    const key = `num_${Date.now()}`;
+    return Promise.try(() => x.set(key, "12345"))
+      .then(() => x.send(`incr ${key} 5\r\n`))
+      .then((v) => expect(v).to.equal("12350"))
+      .then(() => x.send(`decr ${key} 12355\r\n`))
+      .then((v) => expect(v).to.equal("0"))
       .finally(() => x.shutdown());
   });
 });
