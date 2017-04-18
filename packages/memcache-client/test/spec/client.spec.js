@@ -120,6 +120,11 @@ describe("memcache client", function () {
 
 `);
 
+  it("should take a custom logger if it's not undefined", () => {
+    const x = new MemcacheClient({ server, logger: null });
+    expect(x._logger).to.be.null;
+  });
+
   it("should use established connection", () => {
     const x = new MemcacheClient({ server });
     x.connection = "test";
