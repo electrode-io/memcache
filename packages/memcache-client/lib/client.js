@@ -120,7 +120,7 @@ class MemcacheClient {
       socket.write("\r\n");
     };
 
-    return this.send(_data, callback);
+    return this.send(_data, options, callback);
   }
 
   get(key, options, callback) {
