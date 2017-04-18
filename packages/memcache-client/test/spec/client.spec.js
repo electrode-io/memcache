@@ -6,6 +6,8 @@ const MemcacheClient = require("../..");
 const chai = require("chai");
 const expect = chai.expect;
 const Promise = require("bluebird");
+const Fs = require("fs");
+const Path = require("path");
 
 describe("memcache client", function () {
   process.on("unhandledRejection", (e) => {
@@ -146,6 +148,36 @@ describe("memcache client", function () {
       .then(() =>
         x.send((socket) => socket.write(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`))
           .then(verifyResults)
+      )
+      .finally(() => x.shutdown());
+  });
+
+  it("should set a binary file and get it back correctly", () => {
+    const key1 = `image_${Date.now()}`;
+    const key2 = `image_${Date.now()}`;
+    const key3 = `image_${Date.now()}`;
+    const thumbsUp = Fs.readFileSync(Path.join(__dirname, "../data/thumbs-up.jpg"));
+    const x = new MemcacheClient({ server });
+
+    return Promise.all([
+      x.set(key1, thumbsUp),
+      x.set(key2, thumbsUp),
+      x.set(key3, thumbsUp)
+    ])
+      .then((v) => {
+        expect(v).to.deep.equal([["STORED"], ["STORED"], ["STORED"]]);
+      })
+      .then(() =>
+        Promise.all([
+          x.get(key1),
+          x.get(key2),
+          x.get(key3)
+        ])
+          .then((r) => {
+            expect(r[0].value).to.deep.equal(thumbsUp);
+            expect(r[1].value).to.deep.equal(thumbsUp);
+            expect(r[2].value).to.deep.equal(thumbsUp);
+          })
       )
       .finally(() => x.shutdown());
   });
