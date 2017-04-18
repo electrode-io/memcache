@@ -39,6 +39,22 @@ describe("memcache client", function () {
     const jsonData = { "天津经济技术开发区": text2 };
     const x = new MemcacheClient({ server, ignoreNotStored: true });
 
+    const verifyArrayResults = (results) => {
+      expect(results[0].value).to.equal(text1);
+      expect(results[1].value).to.equal("dingle");
+      expect(results[2].value).to.deep.equal(jsonData);
+      expect(results[3].value).to.equal(numValue);
+      expect(results[4].value).to.deep.equal(binValue);
+    };
+
+    const verifyResults = (results) => {
+      expect(results[key1].value).to.equal(text1);
+      expect(results[key2].value).to.equal("dingle");
+      expect(results[key3].value).to.deep.equal(jsonData);
+      expect(results[key4].value).to.equal(numValue);
+      expect(results[key5].value).to.deep.equal(binValue);
+    };
+
     return Promise.all([
       x.set(key1, text1, { compress: true }),
       x.set(key2, "dingle", { compress: false }),
@@ -50,34 +66,18 @@ describe("memcache client", function () {
         Promise.all([
           x.get(key1), x.get(key2), x.get(key3), x.get(key4), x.get(key5)
         ])
-          .then((results) => {
-            expect(results).to.deep.equal([text1, "dingle", jsonData, numValue, binValue]);
-          }))
+          .then(verifyArrayResults))
       .then(() =>
         x.get([key1, key2, key3, key4, key5])
-          .then((results) => {
-            expect(results).to.deep.equal([text1, "dingle", jsonData, numValue, binValue]);
-          })
+          .then(verifyResults)
       )
       .then(() =>
         x.send(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`)
-          .then((results) => {
-            expect(results[key1]).to.equal(text1);
-            expect(results[key2]).to.equal("dingle");
-            expect(results[key3]).to.deep.equal(jsonData);
-            expect(results[key4]).to.equal(numValue);
-            expect(results[key5]).to.deep.equal(binValue);
-          })
+          .then(verifyResults)
       )
       .then(() =>
         x.send((socket) => socket.write(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`))
-          .then((results) => {
-            expect(results[key1]).to.equal(text1);
-            expect(results[key2]).to.equal("dingle");
-            expect(results[key3]).to.deep.equal(jsonData);
-            expect(results[key4]).to.equal(numValue);
-            expect(results[key5]).to.deep.equal(binValue);
-          })
+          .then(verifyResults)
       );
   });
 });

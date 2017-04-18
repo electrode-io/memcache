@@ -29,7 +29,7 @@ class MemcacheClient {
   // If data is a function, then it will be called with socket which you can
   // use to write any data you want else it will be passed to socket.write.
   //
-  // DO NOT send multiple commands.  Bad things will happen.
+  // DO NOT send multiple commands in a single call.  Bad things will happen.
   //
   send(data, callback) {
     return nodeify(this._doCmd((c) => this._send(c, data)), callback);
@@ -43,9 +43,20 @@ class MemcacheClient {
       options = {};
     }
 
-    const _set = (c) => this._set(c, key, value, options);
+    const lifetime = options.lifetime !== undefined ? options.lifetime : (this.options.lifetime || 60);
+    const packed = this._packer.pack(value, options.compress === true);
 
-    return nodeify(this._doCmd(_set), callback);
+    //
+    // store commands
+    // <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
+    //
+    const _data = (socket) => {
+      socket.write(`set ${key} ${packed.flag} ${lifetime} ${Buffer.byteLength(packed.data)}\r\n`);
+      socket.write(packed.data);
+      socket.write("\r\n");
+    };
+
+    return this.send(_data, callback);
   }
 
   get(key, options, callback) {
@@ -54,9 +65,17 @@ class MemcacheClient {
       options = {};
     }
 
-    const _get = (c) => this._get(c, key);
-
-    return nodeify(this._doCmd(_get), callback);
+    const arrayKey = Array.isArray(key);
+    //
+    // get <key>*\r\n
+    // gets <key>*\r\n
+    //
+    // - <key>* means one or more key strings separated by whitespace.
+    //
+    return nodeify(
+      this.send(`get ${arrayKey ? key.join(" ") : key}\r\n`)
+        .then((res) => arrayKey ? res : res[key]),
+      callback);
   }
 
   //
@@ -81,59 +100,6 @@ class MemcacheClient {
     } else {
       conn.socket.write(data);
     }
-
-    return promise;
-  }
-
-  _set(conn, key, value, options) {
-    const promise = new Promise((resolve, reject) => {
-      const store = {
-        cmd: "set",
-        key,
-        callback: (err) => (err ? reject(err) : resolve())
-      };
-
-      conn.queueCommand(store);
-    });
-
-    //
-    // store commands
-    // <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
-    //
-    const lifetime = options.lifetime !== undefined ? options.lifetime : (this.options.lifetime || 60);
-    const socket = conn.socket;
-    const packed = this._packer.pack(value, options.compress === true);
-
-    socket.write(`set ${key} ${packed.flag} ${lifetime} ${Buffer.byteLength(packed.data)}\r\n`);
-    socket.write(packed.data);
-    socket.write("\r\n");
-
-    return promise;
-  }
-
-  _get(conn, key) {
-    const promise = new Promise((resolve, reject) => {
-      const retrieve = {
-        key,
-        results: {},
-        callback: (err) => {
-          if (err) { return reject(err); }
-          const res = retrieve.results;
-          return resolve(Array.isArray(key) ? key.map((k) => res[k]) : res[key]);
-        }
-      };
-
-      conn.queueCommand(retrieve);
-    });
-
-    //
-    // get <key>*\r\n
-    // gets <key>*\r\n
-    //
-    // - <key>* means one or more key strings separated by whitespace.
-    //
-
-    conn.socket.write(`get ${Array.isArray(key) ? key.join(" ") : key}\r\n`);
 
     return promise;
   }

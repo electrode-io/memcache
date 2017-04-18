@@ -23,12 +23,12 @@ const client = MemcacheClient({server: "localhost:11211"});
 // with callback
 
 client.set("key", "data", (err) => { console.log(err); });
-client.get("key", (err, data) => { console.log(data); });
+client.get("key", (err, data) => { console.log(data.value); });
 
 // with promise
 
 client.set("key", "data").then(() => ...);
-client.get("key").then(() => ...);
+client.get("key").then((data) => console.log(data.value));
 
 // concurrency using promise
 
@@ -37,7 +37,10 @@ Promise.all([client.get("key1"), client.get("key2")]);
 
 // get multiple keys
 
-client.get(["key1", "key2"]).then((results) => ...);
+client.get(["key1", "key2"]).then((results) => {
+  console.log("key1:", results["key1"].value);
+  console.log("key2:", results["key2"].value);
+});
 
 // enable compression (if data size > 100 bytes)
 

@@ -77,7 +77,12 @@ class MemcacheConnection extends MemcacheParser {
 
   receiveResult(pending) {
     const retrieve = this._cmdQueue[this._cmdQueue.length - 1];
-    retrieve.results[pending.cmdTokens[1]] = this.client._unpackValue(pending);
+    retrieve.results[pending.cmdTokens[1]] = {
+      tokens: pending.cmdTokens,
+      casUniq: pending.cmdTokens[4],
+      value: this.client._unpackValue(pending)
+    };
+    delete pending.data;
   }
 
   _setupConnection(socket) {
