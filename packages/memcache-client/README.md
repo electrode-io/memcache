@@ -23,8 +23,8 @@ $ npm i memcache-client --save
 
 ```js
 const MemcacheClient = require("memcache-client");
+const expect = require("chai").expect;
 const server = "localhost:11211";
-
 // create a normal client
 
 const client = new MemcacheClient({ server });
@@ -35,22 +35,22 @@ const mrClient = new MemcacheClient({ server, ignoreNotStored: true });
 
 // with callback
 
-client.set("key", "data", (err, r) => { expect(r).to.equal(["STORED"]); });
+client.set("key", "data", (err, r) => { expect(r).to.deep.equal(["STORED"]); });
 client.get("key", (err, data) => { expect(data.value).to.equal("data"); });
 
 // with promise
 
-client.set("key", "data").then((r) => expect(r).to.equal(["STORED"]));
+client.set("key", "data").then((r) => expect(r).to.deep.equal(["STORED"]));
 client.get("key").then((data) => expect(data.value).to.equal("data"));
 
 // concurrency using promise
 
 Promise.all([client.set("key1", "data1"), client.set("key2", "data2")])
-  .then((r) => expect(r).to.deep.equal(["STORED", "STORED"]));
+  .then((r) => expect(r).to.deep.equal([["STORED"], ["STORED"]]));
 Promise.all([client.get("key1"), client.get("key2")])
   .then((r) => {
     expect(r[0].value).to.equal("data1");
-    expect(r[0].value).to.equal("data2");
+    expect(r[1].value).to.equal("data2");
   });
 
 // get multiple keys
@@ -66,7 +66,8 @@ client.gets("key1").then((v) => client.cas("key1", "casData", { casUniq: v.casUn
 
 // enable compression (if data size > 100 bytes)
 
-client.set("key", data, { compress: true }).then((r) => expect(r).to.equal(["STORED"]));
+const data = Buffer.alloc(500);
+client.set("key", data, { compress: true }).then((r) => expect(r).to.deep.equal(["STORED"]));
 
 // fire and forget
 
@@ -76,11 +77,11 @@ client.set("key", data, { noreply: true });
 
 client.cmd("stats").then((r) => { console.log(r.STAT) });
 client.set("foo", "10", { noreply: true });
-client.cmd("incr foo 5").then((v) => expect(v).to.equal(15));
+client.cmd("incr foo 5").then((v) => expect(+v).to.equal(15));
 
 // send any arbitrary data (remember \r\n)
 
-client.send("set foo 0 0 5\r\nhello\r\n").then((r) => expect(r).to.equal(["STORED"]));
+client.send("set foo 0 0 5\r\nhello\r\n").then((r) => expect(r).to.deep.equal(["STORED"]));
 ```
 
 ## Commands with a method
