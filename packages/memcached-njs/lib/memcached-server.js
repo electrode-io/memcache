@@ -27,8 +27,17 @@ class Connection extends MemcacheParser {
     this.server = server;
     this.socket = socket;
     this._id = server.getNewClientID();
+    this._dataQueue = [];
+    this._isPaused = false;
 
-    socket.on("data", this.onData.bind(this));
+    socket.on("data", (data) => {
+      if (this._isPaused) {
+        console.log("server paused, queueing data");
+        this._dataQueue.unshift(data);
+      } else {
+        this.onData(data);
+      }
+    });
 
     socket.on("end", () => {
       console.log("connection", this._id, "end");
@@ -54,6 +63,20 @@ class Connection extends MemcacheParser {
     return true;
   }
 
+  pause() {
+    this._isPaused = true;
+  }
+
+  unpause() {
+    if (this._isPaused) {
+      this._isPaused = false;
+      let data;
+      while ((data = this._dataQueue.pop())) {
+        this.onData(data);
+      }
+    }
+  }
+
   receiveResult(pending) {
     this.server[`cmd_${pending.cmd}`](pending, this);
   }
@@ -74,6 +97,7 @@ class MemcacheServer {
     this._cache = new Map();
     this._clients = new Map();
     this.options = options;
+    this._isPaused = false;
   }
 
   startup() {
@@ -95,6 +119,18 @@ class MemcacheServer {
     });
   }
 
+  // pause processing incoming data
+  // instead queue them up for later
+  pause() {
+    this._isPaused = true;
+    this._clients.forEach((x) => x.connection.pause());
+  }
+
+  unpause() {
+    this._isPaused = false;
+    this._clients.forEach((x) => x.connection.unpause());
+  }
+
   _onError(err) {
     console.log("server error", err);
   }
@@ -110,6 +146,9 @@ class MemcacheServer {
   newConnection(socket) {
     const connection = new Connection(this, socket);
     this._clients.set(connection._id, { connection });
+    if (this._isPaused) {
+      connection.pause();
+    }
   }
 
   _reply(connection, cmdTokens, reply) {
