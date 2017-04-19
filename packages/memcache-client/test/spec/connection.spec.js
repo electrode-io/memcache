@@ -33,4 +33,9 @@ describe("connection", function () {
       cmdTokens: ["test", "foo"]
     });
   });
+
+  it("should only call socket.end in _shutdown if socket is valid", () => {
+    const x = new Connection({ socketID: 1, endConnection: () => undefined });
+    x._shutdown("test");
+  });
 });

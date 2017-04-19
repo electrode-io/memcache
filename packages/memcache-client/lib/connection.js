@@ -158,7 +158,9 @@ class MemcacheConnection extends MemcacheParser {
     }
     // reset connection
     this.client.endConnection(this);
-    this.socket.end();
+    if (this.socket) {
+      this.socket.end();
+    }
     this._reset = true;
     delete this.socket;
     delete this.client;
