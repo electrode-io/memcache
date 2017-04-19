@@ -64,14 +64,14 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   cmdAction_OK(cmdTokens) {
-    this._cmdQueue.pop().callback(null, cmdTokens);
+    this.dequeueCommand().callback(null, cmdTokens);
   }
 
   cmdAction_ERROR(cmdTokens) {
     const msg = (m) => (m ? ` ${m}` : "");
     const error = new Error(`${cmdTokens[0]}${msg(cmdTokens.slice(1).join(" "))}`);
     error.cmdTokens = cmdTokens;
-    this._cmdQueue.pop().callback(error);
+    this.dequeueCommand().callback(error);
   }
 
   cmdAction_RESULT(cmdTokens) {
@@ -97,7 +97,7 @@ class MemcacheConnection extends MemcacheParser {
     // - <value>\r\n , where <value> is the new value of the item's data,
     //   after the increment/decrement operation was carried out.
     if (cmdTokens.length === 1 && cmdTokens[0].match(/[+-]?[0-9]+/)) {
-      this._cmdQueue.pop().callback(null, cmdTokens[0]);
+      this.dequeueCommand().callback(null, cmdTokens[0]);
       return true;
     } else {
       console.log("No command action defined for", cmdTokens);
@@ -110,7 +110,7 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   cmd_END(cmdTokens) {
-    this._cmdQueue.pop().callback();
+    this.dequeueCommand().callback();
   }
 
   processCmd(cmdTokens) {
