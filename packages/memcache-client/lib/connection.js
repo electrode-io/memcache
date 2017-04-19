@@ -31,16 +31,23 @@ class MemcacheConnection extends MemcacheParser {
     assert(host, "Must provide server hostname");
     assert(typeof port === "number" && port > 0, "Must provide valid server port");
 
-    this._connectPromise = new Promise((resolve) => {
-      console.log("connecting to", host, port);
-      const socket = Net.createConnection({ host, port }, () => {
+    console.log("connecting to", host, port);
+    const socket = Net.createConnection({ host, port });
+    this._connectPromise = new Promise((resolve, reject) => {
+      socket.once("error", (err) => {
+        this._reset = true;
+        reject(err);
+      });
+
+      socket.on("connect", () => {
         this.socket = socket;
         this.ready = true;
         this._connectPromise = undefined;
         console.log("connected to", host, port);
+        socket.removeAllListeners("error");
+        this._setupConnection(socket);
         resolve(this);
       });
-      this._setupConnection(socket);
     });
 
     return this._connectPromise;
