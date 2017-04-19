@@ -8,6 +8,7 @@ Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to p
 
 -   Very efficient memcached ASCII protocol parser by using only [NodeJS Buffer APIs](https://nodejs.org/api/buffer.html).
 -   Optional compression for the data before sending to memcached
+-   Auto reconnects when there's network error or timeout
 
 ## Install
 

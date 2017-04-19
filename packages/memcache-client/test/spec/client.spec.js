@@ -18,17 +18,23 @@ describe("memcache client", function () {
   let memcachedServer;
   let server;
 
+  const restartMemcachedServer = () => {
+    if (memcachedServer) {
+      memcachedServer.shutdown();
+    }
+    return memcached.startServer().then((ms) => {
+      console.log("memcached server started");
+      server = `localhost:${ms._server.address().port}`;
+      memcachedServer = ms;
+    });
+  };
+
   before((done) => {
     if (process.env.MEMCACHED_SERVER) {
       server = process.env.MEMCACHED_SERVER;
       done();
     } else {
-      memcachedServer = memcached.startServer().then((ms) => {
-        server = `localhost:${ms._server.address().port}`;
-        memcachedServer = ms;
-        done();
-      })
-        .catch(done);
+      restartMemcachedServer().then(() => done()).catch(done);
     }
   });
 
@@ -393,5 +399,31 @@ describe("memcache client", function () {
         expect(firstConnId).to.not.equal(0);
         expect(firstConnId).to.not.equal(v.STAT[2][1]);
       });
+  });
+
+  it("should handle command timeout error", () => {
+    if (!memcachedServer) {
+      return undefined;
+    }
+    let firstConnId = 0;
+    let timeoutError;
+    const x = new MemcacheClient({ server });
+    return x.cmd("stats").then((v) => {
+      firstConnId = v.STAT[2][1];
+      memcachedServer.pause();
+    })
+      .then(() => Promise.all([x.cmd("stats"), x.get("foo"), x.set("test", "data")]))
+      .catch((err) => (timeoutError = err))
+      .then(() => {
+        expect(timeoutError).to.be.ok;
+        expect(timeoutError.message).to.equal("Command timeout");
+        memcachedServer.unpause();
+        return x.cmd("stats");
+      })
+      .then((v) => {
+        expect(firstConnId).to.not.equal(0);
+        expect(firstConnId).to.not.equal(v.STAT[2][1]);
+      })
+      .finally(() => memcachedServer.unpause());
   });
 });

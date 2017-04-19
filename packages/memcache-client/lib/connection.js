@@ -18,6 +18,8 @@ class MemcacheConnection extends MemcacheParser {
     this.ready = false;
     this._connectPromise = undefined;
     this._id = client.socketID++;
+    this._checkCmdTimer = undefined;
+    this._cmdTimeout = 1000;
     this._reset = false;
   }
 
@@ -53,6 +55,8 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   queueCommand(context) {
+    context.queuedTime = Date.now();
+    this._startCmdTimeout();
     this._cmdQueue.unshift(context);
   }
 
@@ -61,6 +65,10 @@ class MemcacheConnection extends MemcacheParser {
       return { callback: () => undefined };
     }
     return this._cmdQueue.pop();
+  }
+
+  peekCommand() {
+    return this._cmdQueue[this._cmdQueue.length - 1];
   }
 
   cmdAction_OK(cmdTokens) {
@@ -75,13 +83,15 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   cmdAction_RESULT(cmdTokens) {
-    const retrieve = this._cmdQueue[this._cmdQueue.length - 1];
-    const cmd = cmdTokens[0];
-    const results = retrieve.results;
-    if (!results[cmd]) {
-      results[cmd] = [];
+    if (!this._reset) {
+      const retrieve = this.peekCommand();
+      const cmd = cmdTokens[0];
+      const results = retrieve.results;
+      if (!results[cmd]) {
+        results[cmd] = [];
+      }
+      results[cmd].push(cmdTokens.slice(1));
     }
-    results[cmd].push(cmdTokens.slice(1));
   }
 
   cmdAction_SINGLE_RESULT(cmdTokens) {
@@ -119,12 +129,15 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   receiveResult(pending) {
-    const retrieve = this._cmdQueue[this._cmdQueue.length - 1];
-    retrieve.results[pending.cmdTokens[1]] = {
-      tokens: pending.cmdTokens,
-      casUniq: pending.cmdTokens[4],
-      value: this.client._unpackValue(pending)
-    };
+    /* istanbul ignore next */
+    if (!this._reset) {
+      const retrieve = this.peekCommand();
+      retrieve.results[pending.cmdTokens[1]] = {
+        tokens: pending.cmdTokens,
+        casUniq: pending.cmdTokens[4],
+        value: this.client._unpackValue(pending)
+      };
+    }
     delete pending.data;
   }
 
@@ -140,6 +153,26 @@ class MemcacheConnection extends MemcacheParser {
     this.client.endConnection(this);
     this.socket.end();
     this._reset = true;
+  }
+
+  _checkCmdTimeout() {
+    this._checkCmdTimer = undefined;
+
+    if (this._cmdQueue.length > 0) {
+      const cmd = this.peekCommand();
+      const now = Date.now();
+      if (now - cmd.queuedTime > this._cmdTimeout) {
+        this._shutdown("Command timeout");
+      } else {
+        this._startCmdTimeout();
+      }
+    }
+  }
+
+  _startCmdTimeout() {
+    if (!this._checkCmdTimer) {
+      this._checkCmdTimer = setTimeout(this._checkCmdTimeout.bind(this), 250);
+    }
   }
 
   _setupConnection(socket) {

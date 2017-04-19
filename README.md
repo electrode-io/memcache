@@ -6,6 +6,7 @@ NodeJS memcached client with the most efficient ASCII protocol parser.
 
 -   Very efficient memcached ASCII protocol parser by using only [NodeJS Buffer APIs](https://nodejs.org/api/buffer.html).
 -   Optional compression for the data before sending to memcached
+-   Auto reconnects when there's network error or timeout
 
 ## Packages
 
