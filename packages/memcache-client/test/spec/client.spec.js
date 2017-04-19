@@ -378,4 +378,20 @@ describe("memcache client", function () {
       expect(v[1]).to.be.not.empty;
     });
   });
+
+  it("should handle ECONNRESET socket error", () => {
+    if (!memcachedServer) {
+      return undefined;
+    }
+    let firstConnId = 0;
+    const x = new MemcacheClient({ server });
+    return x.cmd("stats").then((v) => {
+      firstConnId = v.STAT[2][1];
+      x.connection.socket.emit("error", new Error("ECONNRESET"));
+    })
+      .then(() => x.cmd("stats")).then((v) => {
+        expect(firstConnId).to.not.equal(0);
+        expect(firstConnId).to.not.equal(v.STAT[2][1]);
+      });
+  });
 });

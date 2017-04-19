@@ -18,6 +18,7 @@ class MemcacheConnection extends MemcacheParser {
     this.ready = false;
     this._connectPromise = undefined;
     this._id = client.socketID++;
+    this._reset = false;
   }
 
   connect(server) {
@@ -53,6 +54,13 @@ class MemcacheConnection extends MemcacheParser {
 
   queueCommand(context) {
     this._cmdQueue.unshift(context);
+  }
+
+  dequeueCommand() {
+    if (this._reset) {
+      return { callback: () => undefined };
+    }
+    return this._cmdQueue.pop();
   }
 
   cmdAction_OK(cmdTokens) {
@@ -120,19 +128,33 @@ class MemcacheConnection extends MemcacheParser {
     delete pending.data;
   }
 
+  _shutdown(msg) {
+    if (this._reset) {
+      return;
+    }
+    let cmd;
+    while ((cmd = this.dequeueCommand())) {
+      cmd.callback(new Error(msg));
+    }
+    // reset connection
+    this.client.endConnection(this);
+    this.socket.end();
+    this._reset = true;
+  }
+
   _setupConnection(socket) {
     socket.on("data", this.onData.bind(this));
 
     socket.on("end", () => {
-      console.log("connection", this._id, "end");
+      this._shutdown("socket end");
     });
 
     socket.on("error", (err) => {
-      console.log("connection", this._id, "socket error", err);
+      this._shutdown(`socket error ${err.message}`);
     });
 
     socket.on("close", () => {
-      console.log("connection", this._id, "close");
+      this._shutdown("socket close");
     });
   }
 }

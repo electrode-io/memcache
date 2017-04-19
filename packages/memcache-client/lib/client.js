@@ -221,6 +221,10 @@ class MemcacheClient {
     result.flag = +result.cmdTokens[2];
     return this._packer.unpack(result);
   }
+
+  endConnection() {
+    this.connection = undefined;
+  }
 }
 
 module.exports = MemcacheClient;
