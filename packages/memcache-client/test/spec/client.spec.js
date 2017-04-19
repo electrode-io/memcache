@@ -299,6 +299,14 @@ describe("memcache client", function () {
     return testReplace(undefined, true);
   });
 
+  it("should fail replace non-existing item", () => {
+    const x = new MemcacheClient({ server });
+    const key = `foo_${Date.now()}`;
+    let testError;
+    return x.replace(key, "bar").catch((err) => (testError = err))
+      .then((r) => expect(testError.message).to.equal("NOT_STORED"));
+  });
+
   it("should set an entry and then append to it", () => {
     const x = new MemcacheClient({ server });
     const key = `poem_${Date.now()}`;
