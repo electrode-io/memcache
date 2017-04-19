@@ -207,6 +207,10 @@ class MemcacheConnection extends MemcacheParser {
     socket.on("close", () => {
       this._shutdown("socket close");
     });
+
+    socket.on("timeout", () => {
+      this._shutdown("socket timeout");
+    });
   }
 }
 

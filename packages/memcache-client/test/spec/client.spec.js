@@ -416,6 +416,22 @@ describe("memcache client", function () {
       });
   });
 
+  it("should handle socket timeout", () => {
+    if (!memcachedServer) {
+      return undefined;
+    }
+    let firstConnId = 0;
+    const x = new MemcacheClient({ server });
+    return x.cmd("stats").then((v) => {
+      firstConnId = v.STAT[2][1];
+      x.connection.socket.emit("timeout");
+    })
+      .then(() => x.cmd("stats")).then((v) => {
+        expect(firstConnId).to.not.equal(0);
+        expect(firstConnId).to.not.equal(v.STAT[2][1]);
+      });
+  });
+
   it("should handle command timeout error", () => {
     if (!memcachedServer) {
       return undefined;
