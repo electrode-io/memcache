@@ -28,6 +28,6 @@
   },
   "devDependencies": {
     "electrode-archetype-njs-module-dev": "^2.0.0",
-    "memcached-njs": "../memcached-njs"
+    "memcached-njs": "^0.2.0"
   }
 }

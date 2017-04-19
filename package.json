@@ -10,6 +10,8 @@
   "license": "Apache-2.0",
   "private": true,
   "devDependencies": {
-    "lerna": "^2.0.0-rc.1"
+    "bluebird": "^3.5.0",
+    "lerna": "^2.0.0-rc.1",
+    "node-zstd": "^2.0.1"
   }
 }
