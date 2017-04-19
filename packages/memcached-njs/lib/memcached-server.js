@@ -737,7 +737,12 @@ class MemcacheServer {
   // END\r\n
 
   cmd_stats(cmdTokens, connection) {
-    connection.send("STAT foo bar\r\nSTAT hello world\r\nEND\r\n");
+    connection.send([
+      "STAT foo bar",
+      "STAT hello world",
+      `STAT connection ${connection._id}`,
+      "END"].join("\r\n"));
+    connection.send("\r\n");
   }
 
   // Other commands
