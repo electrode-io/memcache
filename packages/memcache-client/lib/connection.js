@@ -129,7 +129,6 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   receiveResult(pending) {
-    /* istanbul ignore next */
     if (!this._reset) {
       const retrieve = this.peekCommand();
       retrieve.results[pending.cmdTokens[1]] = {

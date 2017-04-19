@@ -23,4 +23,14 @@ describe("connection", function () {
     const x = new Connection({ socketID: 1 });
     expect(x.cmdAction_undefined(["test"])).to.be.false;
   });
+
+  it("should not process result if it's been reset", () => {
+    const x = new Connection({ socketID: 1 });
+    const context = {};
+    x._reset = true;
+    x._cmdQueue.push(context);
+    x.receiveResult({
+      cmdTokens: ["test", "foo"]
+    });
+  });
 });
