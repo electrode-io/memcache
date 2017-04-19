@@ -1,6 +1,6 @@
 "use strict";
 
-/* eslint-disable no-console,no-magic-numbers,no-var,camelcase,no-unused-vars */
+/* eslint-disable no-console,no-magic-numbers,no-var,camelcase,no-unused-vars,max-statements */
 
 const Net = require("net");
 const MemcacheParser = require("memcache-parser");
@@ -435,7 +435,8 @@ class MemcacheServer {
             `${replies.CLIENT_ERROR} cannot increment or decrement non-numeric value`);
         }
       } else {
-        this._reply(connection, cmdTokens, `${replies.CLIENT_ERROR} invalid numeric delta argument`);
+        this._reply(connection, cmdTokens,
+          `${replies.CLIENT_ERROR} invalid numeric delta argument`);
       }
     }
 
