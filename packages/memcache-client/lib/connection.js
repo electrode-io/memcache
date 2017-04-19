@@ -140,6 +140,10 @@ class MemcacheConnection extends MemcacheParser {
     delete pending.data;
   }
 
+  shutdown() {
+    this._shutdown("Shutdown requested");
+  }
+
   _shutdown(msg) {
     if (this._reset) {
       return;
@@ -152,6 +156,8 @@ class MemcacheConnection extends MemcacheParser {
     this.client.endConnection(this);
     this.socket.end();
     this._reset = true;
+    delete this.socket;
+    delete this.client;
   }
 
   _checkCmdTimeout() {

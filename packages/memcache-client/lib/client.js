@@ -22,7 +22,7 @@ class MemcacheClient {
   }
 
   shutdown() {
-    this.connection.socket.end();
+    this.connection.shutdown();
   }
 
   //
