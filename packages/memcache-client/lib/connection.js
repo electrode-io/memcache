@@ -39,7 +39,7 @@ class MemcacheConnection extends MemcacheParser {
         reject(err);
       });
 
-      socket.on("connect", () => {
+      socket.once("connect", () => {
         this.socket = socket;
         this.ready = true;
         this._connectPromise = undefined;
