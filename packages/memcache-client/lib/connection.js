@@ -71,6 +71,31 @@ class MemcacheConnection extends MemcacheParser {
     return this._cmdQueue[this._cmdQueue.length - 1];
   }
 
+  processCmd(cmdTokens) {
+    const action = cmdActions[cmdTokens[0]];
+    return this[`cmdAction_${action}`](cmdTokens);
+  }
+
+  receiveResult(pending) {
+    if (!this._reset) {
+      const retrieve = this.peekCommand();
+      retrieve.results[pending.cmdTokens[1]] = {
+        tokens: pending.cmdTokens,
+        casUniq: pending.cmdTokens[4],
+        value: this.client._unpackValue(pending)
+      };
+    }
+    delete pending.data;
+  }
+
+  shutdown() {
+    this._shutdown("Shutdown requested");
+  }
+
+  //
+  // Internal methods
+  //
+
   cmdAction_OK(cmdTokens) {
     this.dequeueCommand().callback(null, cmdTokens);
   }
@@ -121,27 +146,6 @@ class MemcacheConnection extends MemcacheParser {
 
   cmd_END(cmdTokens) {
     this.dequeueCommand().callback();
-  }
-
-  processCmd(cmdTokens) {
-    const action = cmdActions[cmdTokens[0]];
-    return this[`cmdAction_${action}`](cmdTokens);
-  }
-
-  receiveResult(pending) {
-    if (!this._reset) {
-      const retrieve = this.peekCommand();
-      retrieve.results[pending.cmdTokens[1]] = {
-        tokens: pending.cmdTokens,
-        casUniq: pending.cmdTokens[4],
-        value: this.client._unpackValue(pending)
-      };
-    }
-    delete pending.data;
-  }
-
-  shutdown() {
-    this._shutdown("Shutdown requested");
   }
 
   _shutdown(msg) {
