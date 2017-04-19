@@ -23,7 +23,7 @@ const server = "localhost:11211";
 
 // create a normal client
 
-const client = MemcacheClient({ server });
+const client = new MemcacheClient({ server });
 
 // Create a client that ignores NOT_STORED response (for McRouter AllAsync mode)
 
@@ -91,6 +91,15 @@ All take an optional `callback`.  If it's not provided then all return a `Promis
 -   `client.append(key, data, [options], [callback])`
 -   `client.prepend(key, data, [options], [callback])`
 -   `client.cas(key, data, options, [callback])`
+
+## Other methods
+
+-   `client.send(data, [options], [callback])`
+-   `client.xsend(data, [options])`
+-   `client.cmd(data, [options], [callback])`
+-   `client.store(cmd, key, value, [optons], [callback])`
+-   `client.retrieve(cmd, key, [options], [callback])`
+-   `client.xretrieve(cmd, key)`
 
 ## License
 
