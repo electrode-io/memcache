@@ -10,6 +10,8 @@ Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to p
 -   Optional compression for the data before sending to memcached
 -   Auto reconnects when there's network error or timeout
 -   Support sending arbitrary commands.  Read up on the [protocol doc here](https://github.com/memcached/memcached/blob/master/doc/protocol.txt).
+-   APIs Support callback or Promise
+-   Support fire and forget requests
 
 ## Install
 
