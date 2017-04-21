@@ -79,6 +79,10 @@ client.cmd("stats").then((r) => { console.log(r.STAT) });
 client.set("foo", "10", { noreply: true });
 client.cmd("incr foo 5").then((v) => expect(+v).to.equal(15));
 
+// you can also send arbitary command with noreply option (noreply will be appended automatically)
+
+client.cmd("incr foo 5", { noreply: true });
+
 // send any arbitrary data (remember \r\n)
 
 client.send("set foo 0 0 5\r\nhello\r\n").then((r) => expect(r).to.deep.equal(["STORED"]));
@@ -96,6 +100,11 @@ All take an optional `callback`.  If it's not provided then all return a `Promis
 -   `client.append(key, data, [options], [callback])`
 -   `client.prepend(key, data, [options], [callback])`
 -   `client.cas(key, data, options, [callback])`
+-   `client.delete(key, [options], [callback])`
+-   `client.incr(key, value, [options], [callback])`
+-   `client.decr(key, value, [options], [callback])`
+-   `client.touch(key, exptime, [options], [callback])`
+-   `client.version([callback])`
 
 ## Other methods
 

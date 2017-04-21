@@ -22,7 +22,9 @@ class MemcacheClient {
   }
 
   shutdown() {
-    this.connection.shutdown();
+    if (this.connection) {
+      this.connection.shutdown();
+    }
   }
 
   //
@@ -62,7 +64,11 @@ class MemcacheClient {
   cmd(data, options, callback) {
     return this.send((socket) => {
       socket.write(data);
-      socket.write("\r\n");
+      if (options && options.noreply) {
+        socket.write(" noreply\r\n");
+      } else {
+        socket.write("\r\n");
+      }
     }, options, callback);
   }
 
@@ -101,6 +107,31 @@ class MemcacheClient {
   cas(key, value, options, callback) {
     assert(options.casUniq, "Must provide options.casUniq for cas store command");
     return this.store("cas", key, value, options, callback);
+  }
+
+  // delete key, fire & forget with options.noreply
+  delete(key, options, callback) {
+    return this.cmd(`delete ${key}`, options, callback);
+  }
+
+  // incr key by value, fire & forget with options.noreply
+  incr(key, value, options, callback) {
+    return this.cmd(`incr ${key} ${value}`, options, callback);
+  }
+
+  // decrease key by value, fire & forget with options.noreply
+  decr(key, value, options, callback) {
+    return this.cmd(`decr ${key} ${value}`, options, callback);
+  }
+
+  // touch key with exp time, fire & forget with options.noreply
+  touch(key, exptime, options, callback) {
+    return this.cmd(`touch ${key} ${exptime}`, options, callback);
+  }
+
+  // get version of server
+  version(callback) {
+    return this.cmd(`version`, {}, callback);
   }
 
   // a generic API for issuing one of the store commands

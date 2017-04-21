@@ -362,10 +362,24 @@ describe("memcache client", function () {
     const x = new MemcacheClient({ server });
     const key = `num_${Date.now()}`;
     return Promise.try(() => x.set(key, "12345"))
-      .then(() => x.cmd(`incr ${key} 5`))
+      .then(() => x.incr(key, 5))
       .then((v) => expect(v).to.equal("12350"))
-      .then(() => x.cmd(`decr ${key} 12355`))
+      .then(() => x.decr(key, 12355))
       .then((v) => expect(v).to.equal("0"))
+      .finally(() => x.shutdown());
+  });
+
+  it("should set and delete a key", () => {
+    const x = new MemcacheClient({ server });
+    const key = `num_${Date.now()}`;
+    return Promise.try(() => x.set(key, "12345"))
+      .then((r) => expect(r).to.deep.equal(["STORED"]))
+      .then(() => x.get(key))
+      .then((v) => expect(v.value).to.equal("12345"))
+      .then(() => x.delete(key))
+      .then((r) => expect(r).to.deep.equal(["DELETED"]))
+      .then(() => x.get(key))
+      .then((v) => expect(v).to.be.undefined)
       .finally(() => x.shutdown());
   });
 
@@ -392,12 +406,37 @@ describe("memcache client", function () {
       .finally(() => x.shutdown());
   });
 
+  it("should send cmd with fire and forget if noreply is set", () => {
+    const x = new MemcacheClient({ server });
+    const key = `foo_${Date.now()}`;
+    return Promise.try(() => x.set(key, "1", { noreply: true }))
+      .then((v) => expect(v).to.be.undefined)
+      .then(() => x.get(key))
+      .then((v) => expect(v.value).to.deep.equal("1"))
+      .then(() => x.cmd(`incr ${key} 5`, { noreply: true }))
+      .then((v) => expect(v).to.be.undefined)
+      .then(() => x.get(key))
+      .then((v) => expect(v.value).to.deep.equal("6"))
+      .finally(() => x.shutdown());
+  });
+
+  it("should update exptime with touch", () => {
+    const x = new MemcacheClient({ server });
+    const key = `poem1_${Date.now()}`;
+    return Promise.try(() => x.set(key, poem1, { noreply: true }))
+      .then((v) => expect(v).to.be.undefined)
+      .then(() => x.touch(key, "500"))
+      .then((r) => expect(r).to.deep.equal(["TOUCHED"]))
+      .finally(() => x.shutdown());
+  });
+
   it("should retrieve version", () => {
     const x = new MemcacheClient({ server });
-    return x.cmd("version").then((v) => {
+    return x.version().then((v) => {
       expect(v[0]).to.equal("VERSION");
       expect(v[1]).to.be.not.empty;
-    });
+    })
+      .finally(() => x.shutdown());
   });
 
   it("should handle ECONNRESET socket error", () => {
@@ -413,7 +452,8 @@ describe("memcache client", function () {
       .then(() => x.cmd("stats")).then((v) => {
         expect(firstConnId).to.not.equal(0);
         expect(firstConnId).to.not.equal(v.STAT[2][1]);
-      });
+      })
+      .finally(() => x.shutdown());
   });
 
   it("should handle socket timeout", () => {
@@ -456,5 +496,10 @@ describe("memcache client", function () {
         expect(firstConnId).to.not.equal(v.STAT[2][1]);
       })
       .finally(() => memcachedServer.unpause());
+  });
+
+  it("should shutdown without connection", () => {
+    const x = new MemcacheClient({ server });
+    x.shutdown();
   });
 });
