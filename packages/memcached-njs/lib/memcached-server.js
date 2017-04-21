@@ -17,6 +17,7 @@ const replies = {
   EXISTS: "EXISTS",
   NOT_FOUND: "NOT_FOUND",
   DELETED: "DELETED",
+  TOUCHED: "TOUCHED",
   OK: "OK",
   CLIENT_ERROR: "CLIENT_ERROR"
 };
@@ -508,7 +509,14 @@ class MemcacheServer {
   //   found.
 
   cmd_touch(cmdTokens, connection) {
-
+    const key = cmdTokens[1];
+    if (!this._cache.has(key)) {
+      this._reply(connection, cmdTokens, replies.NOT_FOUND);
+    } else {
+      const e = this._cache.get(key);
+      e.lifetime = +cmdTokens[2];
+      this._reply(connection, cmdTokens, replies.TOUCHED)
+    }
   }
 
   // Slabs Reassign
