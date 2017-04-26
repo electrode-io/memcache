@@ -1,3 +1,5 @@
+[![Build Status][travis-image]][travis-url]
+
 # memcache
 
 NodeJS memcached client with the most efficient ASCII protocol parser.
@@ -25,3 +27,7 @@ This repo uses [lerna](https://lernajs.io/) to manage multiple packages.
 -   [node-memcache](https://github.com/elbart/node-memcache)
 -   [mc](http://overclocked.com/mc/)
 -   [memcachejs](https://github.com/jketterl/memcachejs)
+
+[travis-image]: https://travis-ci.org/jchip/memcache.svg?branch=master
+
+[travis-url]: https://travis-ci.org/jchip/memcache
