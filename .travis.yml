@@ -2,6 +2,7 @@ language: node_js
 node_js:
   - v4
   - v6
+  - v7
 notifications:
   email:
     - joel123@gmail.com
@@ -13,4 +14,4 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - g++-4.8
-before_install: if [[ `npm -v` != 3* ]]; then npm i -g npm@3; npm --version; fi
+before_install: if [[ $(npm -v | cut -f1 -d.) -lt 3 ]]; then npm i -g npm@3; npm --version; fi
