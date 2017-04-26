@@ -515,7 +515,7 @@ class MemcacheServer {
     } else {
       const e = this._cache.get(key);
       e.lifetime = +cmdTokens[2];
-      this._reply(connection, cmdTokens, replies.TOUCHED)
+      this._reply(connection, cmdTokens, replies.TOUCHED);
     }
   }
 
