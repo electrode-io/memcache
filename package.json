@@ -11,6 +11,7 @@
   "private": true,
   "devDependencies": {
     "bluebird": "^3.5.0",
+    "gulp": "^3.9.1",
     "lerna": "^2.0.0-rc.1",
     "node-zstd": "^2.0.1"
   }
