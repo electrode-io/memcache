@@ -1,3 +1,6 @@
+[![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url]
+[![Dependency Status][daviddm-image]][daviddm-url] [![devDependency Status][daviddm-dev-image]][daviddm-dev-url]
+
 # memcache-client
 
 NodeJS memcached client with the most efficient ASCII protocol parser.
@@ -118,3 +121,19 @@ All take an optional `callback`.  If it's not provided then all return a `Promis
 ## License
 
 Apache-2.0 © [Joel Chen](https://github.com/jchip)
+
+[travis-image]: https://travis-ci.org/jchip/memcache.svg?branch=master
+
+[travis-url]: https://travis-ci.org/jchip/memcache
+
+[npm-image]: https://badge.fury.io/js/memcache-client.svg
+
+[npm-url]: https://npmjs.org/package/memcache-client
+
+[daviddm-image]: https://david-dm.org/jchip/memcache-client/status.svg
+
+[daviddm-url]: https://david-dm.org/jchip/memcache-client
+
+[daviddm-dev-image]: https://david-dm.org/jchip/memcache-client/dev-status.svg
+
+[daviddm-dev-url]: https://david-dm.org/jchip/memcache-client?type=dev

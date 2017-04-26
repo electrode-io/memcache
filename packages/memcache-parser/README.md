@@ -1,3 +1,6 @@
+[![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url]
+[![Dependency Status][daviddm-image]][daviddm-url] [![devDependency Status][daviddm-dev-image]][daviddm-dev-url]
+
 # memcache-parser
 
 A very efficient memcached ASCII protocol parser by using only NodeJS [Buffer APIs](https://nodejs.org/api/buffer.html).
@@ -39,3 +42,23 @@ class MemcacheConnection extends MemcacheParser {
 ```
 
 See memcache-client for more example usage
+
+## License
+
+Apache-2.0 © [Joel Chen](https://github.com/jchip)
+
+[travis-image]: https://travis-ci.org/jchip/memcache.svg?branch=master
+
+[travis-url]: https://travis-ci.org/jchip/memcache
+
+[npm-image]: https://badge.fury.io/js/memcache-parser.svg
+
+[npm-url]: https://npmjs.org/package/memcache-parser
+
+[daviddm-image]: https://david-dm.org/jchip/memcache-parser/status.svg
+
+[daviddm-url]: https://david-dm.org/jchip/memcache-parser
+
+[daviddm-dev-image]: https://david-dm.org/jchip/memcache-parser/dev-status.svg
+
+[daviddm-dev-url]: https://david-dm.org/jchip/memcache-parser?type=dev
