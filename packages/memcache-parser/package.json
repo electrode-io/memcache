@@ -4,7 +4,7 @@
   "description": "A very efficient NodeJS memcached ASCII Protocol parser by using only Buffer APIs",
   "main": "lib/memcache-parser.js",
   "scripts": {
-    "test": "gulp check"
+    "test": "gulp check && istanbul check-coverage"
   },
   "repository": {
     "type": "git",

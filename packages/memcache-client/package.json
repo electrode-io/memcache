@@ -4,7 +4,7 @@
   "description": "NodeJS memcached ASCII protocol client",
   "main": "lib/client.js",
   "scripts": {
-    "test": "gulp check",
+    "test": "gulp check && istanbul check-coverage",
     "testp": "MEMCACHED_SERVER=10.1.1.1:11211 npm test"
   },
   "repository": {
