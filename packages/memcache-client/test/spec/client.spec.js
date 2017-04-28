@@ -1,6 +1,6 @@
 "use strict";
 
-/* eslint-disable no-unused-vars,no-irregular-whitespace */
+/* eslint-disable no-unused-vars,no-irregular-whitespace,no-nested-ternary */
 
 const MemcacheClient = require("../..");
 const chai = require("chai");
@@ -126,6 +126,20 @@ describe("memcache client", function () {
 
 `);
 
+  const poem5 = crlfify(`
+
+ 《我蠢》  
+
+    俺没有文化  
+    我智商很低，  
+    要问我是谁，  
+    一头大蠢驴。  
+    俺是驴，  
+    俺是头驴，  
+    俺是头呆驴    
+
+`);
+
   it("should handle ECONNREFUSED", () => {
     const x = new MemcacheClient({ server: "localhost:65000" });
     let testError;
@@ -136,12 +150,6 @@ describe("memcache client", function () {
   it("should take a custom logger if it's not undefined", () => {
     const x = new MemcacheClient({ server, logger: null });
     expect(x._logger).to.be.null;
-  });
-
-  it("should use established connection", () => {
-    const x = new MemcacheClient({ server });
-    x.connection = "test";
-    return x._connect(server).then((v) => expect(v).to.equal("test"));
   });
 
   it("should use callback on get and set", (done) => {
@@ -182,7 +190,7 @@ describe("memcache client", function () {
     expect(testOptions.lifetime).to.equal(500);
   });
 
-  it("should set and get multiple keys concurrently", () => {
+  const testMulti = (maxConnections) => {
     const key1 = "text1维基百科";
     const key2 = "blah";
     const key3 = "text2天津经济技术开发区";
@@ -191,7 +199,9 @@ describe("memcache client", function () {
     const numValue = 12345;
     const binValue = Buffer.allocUnsafe(1500);
     const jsonData = { "天津经济技术开发区": text2 };
-    const x = new MemcacheClient({ server, ignoreNotStored: true });
+    const x = new MemcacheClient({ server: { server, maxConnections }, ignoreNotStored: true });
+
+    const expectedConnections = maxConnections === undefined ? 1 : (maxConnections < 5 ? maxConnections : 5);
 
     const verifyArrayResults = (results) => {
       expect(results[0].value).to.equal(text1);
@@ -233,7 +243,36 @@ describe("memcache client", function () {
         x.send((socket) => socket.write(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`))
           .then(verifyResults)
       )
+      .then(() => expect(x._node.connections.length).to.equal(expectedConnections))
       .finally(() => x.shutdown());
+  };
+
+  it("should set and get multiple keys concurrently with default maxConnections", () => {
+    return testMulti();
+  });
+
+  it("should set and get multiple keys concurrently with 1 maxConnections", () => {
+    return testMulti(1);
+  });
+
+  it("should set and get multiple keys concurrently with 2 maxConnections", () => {
+    return testMulti(2);
+  });
+
+  it("should set and get multiple keys concurrently with 3 maxConnections", () => {
+    return testMulti(3);
+  });
+
+  it("should set and get multiple keys concurrently with 4 maxConnections", () => {
+    return testMulti(4);
+  });
+
+  it("should set and get multiple keys concurrently with 5 maxConnections", () => {
+    return testMulti(5);
+  });
+
+  it("should set and get multiple keys concurrently with 10 maxConnections", () => {
+    return testMulti(10);
   });
 
   it("should set a binary file and get it back correctly", () => {
@@ -338,9 +377,9 @@ describe("memcache client", function () {
       .then(() => x.gets(key))
       .tap((r) => expect(r.value).to.equal(poem4))
       .tap((r) => expect(r.casUniq).to.be.ok)
-      .then((r) => x.cas(key, poem3, { casUniq: r.casUniq, compress: true }))
+      .then((r) => x.cas(key, poem5, { casUniq: r.casUniq, compress: true }))
       .then(() => x.get(key))
-      .then((r) => expect(r.value).to.equal(poem3))
+      .then((r) => expect(r.value).to.equal(poem5))
       .finally(() => x.shutdown());
   });
 
@@ -447,7 +486,7 @@ describe("memcache client", function () {
     const x = new MemcacheClient({ server });
     return x.cmd("stats").then((v) => {
       firstConnId = v.STAT[2][1];
-      x.connection.socket.emit("error", new Error("ECONNRESET"));
+      x._node.connections[0].socket.emit("error", new Error("ECONNRESET"));
     })
       .then(() => x.cmd("stats")).then((v) => {
         expect(firstConnId).to.not.equal(0);
@@ -464,7 +503,7 @@ describe("memcache client", function () {
     const x = new MemcacheClient({ server });
     return x.cmd("stats").then((v) => {
       firstConnId = v.STAT[2][1];
-      x.connection.socket.emit("timeout");
+      x._node.connections[0].socket.emit("timeout");
     })
       .then(() => x.cmd("stats")).then((v) => {
         expect(firstConnId).to.not.equal(0);

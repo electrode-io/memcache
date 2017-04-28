@@ -11,9 +11,10 @@ const cmdActions = require("./cmd-actions");
 /* eslint-disable no-console,camelcase,max-statements,no-var */
 
 class MemcacheConnection extends MemcacheParser {
-  constructor(client) {
+  constructor(client, node) {
     super(client._logger);
     this.client = client;
+    this.node = node;
     this._cmdQueue = [];
     this.ready = false;
     this._connectPromise = undefined;
@@ -164,7 +165,7 @@ class MemcacheConnection extends MemcacheParser {
       cmd.callback(new Error(msg));
     }
     // reset connection
-    this.client.endConnection(this);
+    this.node.endConnection(this);
     if (this.socket) {
       this.socket.end();
       this.socket.unref();
@@ -172,6 +173,7 @@ class MemcacheConnection extends MemcacheParser {
     this._reset = true;
     delete this.socket;
     delete this.client;
+    delete this.node;
   }
 
   _checkCmdTimeout() {

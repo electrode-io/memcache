@@ -36,6 +36,11 @@ const client = new MemcacheClient({ server });
 
 const mrClient = new MemcacheClient({ server, ignoreNotStored: true });
 
+// You can specify maxConnections by using an object for server
+// Default maxConnections is 1
+
+const mClient = new MemcacheClient({ server: { server, maxConnections: 5 } });
+
 // with callback
 
 client.set("key", "data", (err, r) => { expect(r).to.deep.equal(["STORED"]); });

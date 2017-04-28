@@ -4,13 +4,15 @@ const assert = require("assert");
 const optionalRequire = require("optional-require")(require);
 const Promise = optionalRequire("bluebird", { message: false, default: global.Promise });
 const Zstd = optionalRequire("node-zstd", false);
-const MemcacheConnection = require("./connection");
 const nodeify = require("./nodeify");
 const ValuePacker = require("./value-packer");
 const nullLogger = require("./null-logger");
+const MemcacheNode = require("./memcache-node");
 
 /* eslint-disable no-bitwise,no-magic-numbers,max-params,max-statements,no-var */
 /* eslint max-len:[2,120] */
+
+const DEFAULT_MAX_CONNECTIONS = 1;
 
 class MemcacheClient {
   constructor(options) {
@@ -19,12 +21,17 @@ class MemcacheClient {
     this.socketID = 1;
     this._packer = new ValuePacker(options.compressor || Zstd);
     this._logger = options.logger !== undefined ? options.logger : nullLogger;
+    let maxConnections = DEFAULT_MAX_CONNECTIONS;
+    let server = options.server;
+    if (typeof server === "object") {
+      maxConnections = server.maxConnections || DEFAULT_MAX_CONNECTIONS;
+      server = server.server;
+    }
+    this._node = new MemcacheNode(this, { server, maxConnections });
   }
 
   shutdown() {
-    if (this.connection) {
-      this.connection.shutdown();
-    }
+    this._node.shutdown();
   }
 
   //
@@ -56,7 +63,7 @@ class MemcacheClient {
 
   // the promise only version of send
   xsend(data, options) {
-    return this._doCmd((c) => this._send(c, data, options || {}));
+    return this._node.doCmd((c) => this._send(c, data, options || {}));
   }
 
   // a convenient method to send a single line as a command to the server
@@ -226,35 +233,12 @@ class MemcacheClient {
     return nodeify(this.xsend(data, options), callback);
   }
 
-  _doCmd(action) {
-    if (this.connection === undefined) {
-      return this._connect(this.options.server).then(action);
-    } else if (this.connection.ready === false) {
-      return this.connection.waitReady().then(action);
-    } else {
-      return action(this.connection);
-    }
-  }
-
-  _connect(server) {
-    if (this.connection === undefined) {
-      this.connection = new MemcacheConnection(this);
-      return this.connection.connect(server);
-    } else {
-      return Promise.resolve(this.connection);
-    }
-  }
-
   _unpackValue(result) {
     //
     // VALUE <key> <flags> <bytes> [<cas unique>]\r\n
     //
     result.flag = +result.cmdTokens[2];
     return this._packer.unpack(result);
-  }
-
-  endConnection() {
-    this.connection = undefined;
   }
 }
 
