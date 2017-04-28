@@ -12,6 +12,7 @@ NodeJS memcached client with the most efficient ASCII protocol parser.
 -   Support sending arbitrary commands.  Read up on the [protocol doc here](https://github.com/memcached/memcached/blob/master/doc/protocol.txt).
 -   APIs Support callback or Promise
 -   Support fire and forget requests
+-   Support multiple connections
 
 ## Packages
 

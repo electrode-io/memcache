@@ -15,6 +15,7 @@ Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to p
 -   Support sending arbitrary commands.  Read up on the [protocol doc here](https://github.com/memcached/memcached/blob/master/doc/protocol.txt).
 -   APIs Support callback or Promise
 -   Support fire and forget requests
+-   Support multiple connections
 
 ## Install
 
