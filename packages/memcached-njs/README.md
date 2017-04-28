@@ -17,10 +17,10 @@ Apache-2.0 © [Joel Chen](https://github.com/jchip)
 
 [npm-url]: https://npmjs.org/package/memcached-njs
 
-[daviddm-image]: https://david-dm.org/jchip/memcached-njs/status.svg
+[daviddm-image]: https://david-dm.org/jchip/memcache/status.svg?path=packages/memcached-njs
 
-[daviddm-url]: https://david-dm.org/jchip/memcached-njs
+[daviddm-url]: https://david-dm.org/jchip/memcache?path=packages/memcached-njs
 
-[daviddm-dev-image]: https://david-dm.org/jchip/memcached-njs/dev-status.svg
+[daviddm-dev-image]: https://david-dm.org/jchip/memcache/dev-status.svg?path=packages/memcached-njs
 
-[daviddm-dev-url]: https://david-dm.org/jchip/memcached-njs?type=dev
+[daviddm-dev-url]: https://david-dm.org/jchip/memcache?path=packages/memcached-njs

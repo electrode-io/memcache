@@ -55,10 +55,10 @@ Apache-2.0 © [Joel Chen](https://github.com/jchip)
 
 [npm-url]: https://npmjs.org/package/memcache-parser
 
-[daviddm-image]: https://david-dm.org/jchip/memcache-parser/status.svg
+[daviddm-image]: https://david-dm.org/jchip/memcache/status.svg?path=packages/memcache-parser
 
-[daviddm-url]: https://david-dm.org/jchip/memcache-parser
+[daviddm-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-parser
 
-[daviddm-dev-image]: https://david-dm.org/jchip/memcache-parser/dev-status.svg
+[daviddm-dev-image]: https://david-dm.org/jchip/memcache/dev-status.svg?path=packages/memcache-parser
 
-[daviddm-dev-url]: https://david-dm.org/jchip/memcache-parser?type=dev
+[daviddm-dev-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-parser

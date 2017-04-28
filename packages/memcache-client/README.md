@@ -1,5 +1,5 @@
 [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url]
-[![Dependency Status][daviddm-image]][daviddm-url] [![devDependency Status][daviddm-dev-image]][daviddm-dev-url]
+[![Dependency Status][daviddm-image]][daviddm-url] [![devDependency Status][daviddm-dev-image]][daviddm-dev-url] [![optionalDependency Status][daviddm-opt-image]][daviddm-opt-url]
 
 # memcache-client
 
@@ -136,10 +136,14 @@ Apache-2.0 © [Joel Chen](https://github.com/jchip)
 
 [npm-url]: https://npmjs.org/package/memcache-client
 
-[daviddm-image]: https://david-dm.org/jchip/memcache-client/status.svg
+[daviddm-image]: https://david-dm.org/jchip/memcache/status.svg?path=packages/memcache-client
 
-[daviddm-url]: https://david-dm.org/jchip/memcache-client
+[daviddm-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-client
 
-[daviddm-dev-image]: https://david-dm.org/jchip/memcache-client/dev-status.svg
+[daviddm-dev-image]: https://david-dm.org/jchip/memcache/dev-status.svg?path=packages/memcache-client
 
-[daviddm-dev-url]: https://david-dm.org/jchip/memcache-client?type=dev
+[daviddm-dev-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-client
+
+[daviddm-opt-image]: https://david-dm.org/jchip/memcache/optional-status.svg?path=packages/memcache-client
+
+[daviddm-opt-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-client
