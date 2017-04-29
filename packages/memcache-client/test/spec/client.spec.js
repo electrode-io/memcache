@@ -18,11 +18,12 @@ describe("memcache client", function () {
   let memcachedServer;
   let server;
 
-  const restartMemcachedServer = () => {
+  const restartMemcachedServer = (port) => {
     if (memcachedServer) {
       memcachedServer.shutdown();
     }
-    return memcached.startServer().then((ms) => {
+    console.log("port", port);
+    return memcached.startServer(port && { port }).then((ms) => {
       console.log("memcached server started");
       server = `localhost:${ms._server.address().port}`;
       memcachedServer = ms;
@@ -540,5 +541,21 @@ describe("memcache client", function () {
   it("should shutdown without connection", () => {
     const x = new MemcacheClient({ server });
     x.shutdown();
+  });
+
+  it("should be able to connect after initial connection failure", () => {
+    const port = memcachedServer._server.address().port;
+    expect(memcachedServer).to.be.OK;
+    memcachedServer.shutdown();
+    const x = new MemcacheClient({ server });
+    let testErr;
+    return x.set("test", "hello")
+      .catch((err) => (testErr = err))
+      .then(() => expect(testErr.message).include("ECONNREFUSED"))
+      .then(() => restartMemcachedServer(port))
+      .then(() => x.set("test", "hello"))
+      .then(() => x.get("test").then((r) => {
+        expect(r.value).to.equal("hello");
+      }));
   });
 });
