@@ -9,7 +9,7 @@ function startServer(options) {
 
 /* istanbul ignore next */
 if (require.main === module) {
-  startServer({ port: 8889 });
+  startServer({ port: 11211 });
 } else {
   module.exports = {
     startServer,
