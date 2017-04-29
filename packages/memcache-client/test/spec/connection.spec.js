@@ -3,10 +3,38 @@
 const Connection = require("../../lib/connection");
 
 describe("connection", function () {
-  it("waitReady should self if ready flag is true", () => {
+  it("waitReady should resolve connect Promise status is CONNECTING", () => {
     const x = new Connection({ socketID: 1 });
-    x.ready = true;
+    x._connectPromise = "test";
+    x._status = Connection.Status.CONNECTING;
+    expect(x.waitReady()).to.equal("test");
+  });
+
+  it("waitReady should resolve self if status is READY", () => {
+    const x = new Connection({ socketID: 1 });
+    x._status = Connection.Status.READY;
     expect(x.waitReady().isFulfilled()).to.be.true;
+  });
+
+  it("waitReady should fail if status is INIT", () => {
+    const x = new Connection({ socketID: 1 });
+    x._status = Connection.Status.INIT;
+    expect(() => x.waitReady()).to.throw(Error);
+  });
+
+  it("getStatuStr should return correct strings", () => {
+    const x = new Connection({ socketID: 1 });
+    const Status = Connection.Status;
+    x._status = Status.INIT;
+    expect(x.getStatusStr()).to.equal("INIT");
+    x._status = Status.CONNECTING;
+    expect(x.getStatusStr()).to.equal("CONNECTING");
+    x._status = Status.READY;
+    expect(x.getStatusStr()).to.equal("READY");
+    x._status = Status.SHUTDOWN;
+    expect(x.getStatusStr()).to.equal("SHUTDOWN");
+    x._status = 0;
+    expect(x.getStatusStr()).to.equal("UNKNOWN");
   });
 
   it("cmdAction_ERROR should append message after command", () => {

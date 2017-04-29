@@ -12,7 +12,7 @@ describe("memcache node", function () {
     const node = new MemcacheNode({}, { server: "test", maxConnections: 1 });
     node.connections.push({
       test: "test",
-      ready: true,
+      isReady: () => true,
       _cmdQueue: []
     });
     node.doCmd((c) => expect(c.test).to.equal("test"));
@@ -22,7 +22,7 @@ describe("memcache node", function () {
     const node = new MemcacheNode({}, { server: "test", maxConnections: 2 });
     node.connections.push({
       test: "test",
-      ready: true,
+      isReady: () => true,
       _cmdQueue: [{}]
     });
     let testServer;
@@ -38,7 +38,7 @@ describe("memcache node", function () {
     const node = new MemcacheNode({}, { server: "test", maxConnections: 2 });
     node.connections.push({
       test: "test",
-      ready: false,
+      isReady: () => false,
       _cmdQueue: []
     });
     let testServer;
@@ -53,17 +53,17 @@ describe("memcache node", function () {
     const node = new MemcacheNode({}, { server: "test", maxConnections: 2 });
     node.connections.push({
       test: "test1",
-      ready: true,
+      isReady: () => true,
       _cmdQueue: [{}, {}, {}]
     });
     node.connections.push({
       test: "test2",
-      ready: true,
+      isReady: () => true,
       _cmdQueue: [{}]
     });
     node.connections.push({
       test: "test3",
-      ready: true,
+      isReady: () => true,
       _cmdQueue: [{}, {}]
     });
     node.doCmd((c) => expect(c.test).to.equal("test2"));
@@ -73,18 +73,18 @@ describe("memcache node", function () {
     const node = new MemcacheNode({}, { server: "test", maxConnections: 2 });
     node.connections.push({
       test: "test1",
-      ready: true,
+      isReady: () => true,
       _cmdQueue: [{}, {}, {}]
     });
     node.connections.push({
       test: "test2",
-      ready: false,
+      isReady: () => false,
       _cmdQueue: [{}],
       waitReady: () => Promise.resolve("dummy-connection")
     });
     node.connections.push({
       test: "test3",
-      ready: true,
+      isReady: () => true,
       _cmdQueue: [{}, {}]
     });
     node.doCmd((c) => expect(c).to.equal("dummy-connection"));

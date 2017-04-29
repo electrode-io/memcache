@@ -10,18 +10,31 @@ const cmdActions = require("./cmd-actions");
 /* eslint-disable no-bitwise,no-magic-numbers,max-params,no-unused-vars */
 /* eslint-disable no-console,camelcase,max-statements,no-var */
 
+const Status = {
+  INIT: 1,
+  CONNECTING: 2,
+  READY: 3,
+  SHUTDOWN: 4
+};
+
+const StatusStr = {
+  [Status.INIT]: "INIT",
+  [Status.CONNECTING]: "CONNECTING",
+  [Status.READY]: "READY",
+  [Status.SHUTDOWN]: "SHUTDOWN"
+};
+
 class MemcacheConnection extends MemcacheParser {
   constructor(client, node) {
     super(client._logger);
     this.client = client;
     this.node = node;
     this._cmdQueue = [];
-    this.ready = false;
     this._connectPromise = undefined;
     this._id = client.socketID++;
     this._checkCmdTimer = undefined;
     this._cmdTimeout = 1000;
-    this._reset = false;
+    this._status = Status.INIT;
   }
 
   connect(server) {
@@ -35,14 +48,16 @@ class MemcacheConnection extends MemcacheParser {
     console.log("connecting to", host, port);
     const socket = Net.createConnection({ host, port });
     this._connectPromise = new Promise((resolve, reject) => {
+      this._status = Status.CONNECTING;
+
       socket.once("error", (err) => {
-        this._reset = true;
+        this._shutdown("connect failed");
         reject(err);
       });
 
       socket.once("connect", () => {
         this.socket = socket;
-        this.ready = true;
+        this._status = Status.READY;
         this._connectPromise = undefined;
         console.log("connected to", host, port);
         socket.removeAllListeners("error");
@@ -54,11 +69,30 @@ class MemcacheConnection extends MemcacheParser {
     return this._connectPromise;
   }
 
+  isReady() {
+    return this._status === Status.READY;
+  }
+
+  isConnecting() {
+    return this._status === Status.CONNECTING;
+  }
+
+  isShutdown() {
+    return this._status === Status.SHUTDOWN;
+  }
+
+  getStatusStr() {
+    return StatusStr[this._status] || "UNKNOWN";
+  }
+
   waitReady() {
-    if (this.ready) {
+    if (this.isConnecting()) {
+      assert(this._connectPromise, "MemcacheConnection not pending connect");
+      return this._connectPromise;
+    } else if (this.isReady()) {
       return Promise.resolve(this);
     } else {
-      return this._connectPromise;
+      throw new Error("MemcacheConnection can't waitReady for status", this._status);
     }
   }
 
@@ -69,7 +103,7 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   dequeueCommand() {
-    if (this._reset) {
+    if (this.isShutdown()) {
       return { callback: () => undefined };
     }
     return this._cmdQueue.pop();
@@ -85,7 +119,7 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   receiveResult(pending) {
-    if (!this._reset) {
+    if (this.isReady()) {
       const retrieve = this.peekCommand();
       retrieve.results[pending.cmdTokens[1]] = {
         tokens: pending.cmdTokens,
@@ -116,7 +150,7 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   cmdAction_RESULT(cmdTokens) {
-    if (!this._reset) {
+    if (this.isReady()) {
       const retrieve = this.peekCommand();
       const cmd = cmdTokens[0];
       const results = retrieve.results;
@@ -157,20 +191,21 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   _shutdown(msg) {
-    if (this._reset) {
+    if (this.isShutdown()) {
       return;
     }
+    delete this._connectPromise;
     let cmd;
     while ((cmd = this.dequeueCommand())) {
       cmd.callback(new Error(msg));
     }
+    this._status = Status.SHUTDOWN;
     // reset connection
     this.node.endConnection(this);
     if (this.socket) {
       this.socket.end();
       this.socket.unref();
     }
-    this._reset = true;
     delete this.socket;
     delete this.client;
     delete this.node;
@@ -216,5 +251,7 @@ class MemcacheConnection extends MemcacheParser {
     });
   }
 }
+
+MemcacheConnection.Status = Status;
 
 module.exports = MemcacheConnection;

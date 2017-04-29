@@ -18,7 +18,7 @@ class MemcacheNode {
   doCmd(action) {
     // look for idle and ready connection
     var conn = this.connections.find((c) => {
-      return c.ready && c._cmdQueue.length === 0;
+      return c.isReady() && c._cmdQueue.length === 0;
     });
 
     if (conn) {
@@ -39,7 +39,7 @@ class MemcacheNode {
       }
     });
 
-    if (conn.ready) {
+    if (conn.isReady()) {
       return action(conn);
     }
 
