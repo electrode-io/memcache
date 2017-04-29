@@ -12,9 +12,12 @@
     "url": "https://github.com/jchip/memcache.git"
   },
   "keywords": [
+    "memcache",
     "memcached",
     "nodejs",
-    "client"
+    "client",
+    "ascii",
+    "protocol"
   ],
   "author": "Joel Chen <joel123@gmail.com>",
   "license": "Apache-2.0",
