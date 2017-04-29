@@ -1,7 +1,7 @@
 {
   "name": "memcache-client",
   "version": "0.6.2",
-  "description": "NodeJS memcached ASCII protocol client",
+  "description": "NodeJS memcached client",
   "main": "lib/client.js",
   "scripts": {
     "test": "gulp check && istanbul check-coverage",

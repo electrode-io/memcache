@@ -73,7 +73,7 @@ client.get(["key1", "key2"]).then((results) => {
 
 client.gets("key1").then((v) => client.cas("key1", "casData", { casUniq: v.casUniq }));
 
-// enable compression (if data size > 100 bytes)
+// enable compression (if data size >= 100 bytes)
 
 const data = Buffer.alloc(500);
 client.set("key", data, { compress: true }).then((r) => expect(r).to.deep.equal(["STORED"]));
@@ -115,6 +115,67 @@ All take an optional `callback`.  If it's not provided then all return a `Promis
 -   `client.touch(key, exptime, [options], [callback])`
 -   `client.version([callback])`
 
+### Client Options
+
+The client constructor takes the following values in `options`.
+
+```js
+const options = {
+  server: { server: "host:port", maxConnections: 3 },
+  ignoreNotStored: true, // ignore NOT_STORED response
+  lifetime: 100, // TTL 100 seconds
+  compressor: require("custom-compressor"),
+  logger: require("./custom-logger")
+};
+
+const client = new MemcacheClient(options);
+```
+
+-   `server` - **_required_** A string in `host:port` format, or an object:
+
+```js
+{ server: "host:port", maxConnections: 3 }
+```
+
+> Default `maxConnections` is `1`
+
+-   `ignoreNotStored` - **_optional_** If set to true, then will not treat `NOT_STORED` reply from any store commands as error.  Use this for [Mcrouter AllAsyncRoute] mode.
+-   `lifetime` - **_optional_** Your cache TTL in **_seconds_** to use for all entries.  Default is 60 seconds.
+-   `compressor` - **_optional_** a custom compressor for compressing the data.  By default [node-zstd] is used.
+    -   It should provide two methods that take `Buffer` value, and return result as `Buffer`.
+        -   `compressSync(value)` 
+        -   `decompressSync(value)`
+-   `logger` - **_optional_** Custom logger like this:
+
+```js
+module.exports = {
+  debug: (msg) => console.log(msg),
+  info: (msg) => console.log(msg),
+  warn: (msg) => console.warn(msg),
+  error: (msg) => console.error(msg)
+};
+```
+
+### Command Options
+
+#### `noreply`
+
+Almost all commands take a `noreply` field for `options`, which if set to true, then the command is fire & forget for the memcached server.
+
+Obviously this doesn't apply to commands like `get` and `gets`, which exist to retrieve from the server.
+
+#### `lifetime` and `compress`
+
+For all store commands, `set`, `add`, `replace`, `append`, `prepend`, and `cas`, they take:
+
+-   A `lifetime` field that specify the TTL time in **_seconds_** for the entry.  If this is not set, then will try to use client `options.lifetime` or 60 seconds.
+-   A `compress` field, which if set to true, will cause any data with size >= 100 bytes to be compressed.
+    -   A default compressor using [node-zstd] is provided, but you can set your own compressor when creating the client.
+
+#### `casUniq`
+
+For the `cas` command, `options` must contain a `casUniq` value that you received from an `gets` command you called earlier.
+
 ## Other methods
 
 -   `client.send(data, [options], [callback])`
@@ -147,3 +208,9 @@ Apache-2.0 © [Joel Chen](https://github.com/jchip)
 [daviddm-opt-image]: https://david-dm.org/jchip/memcache/optional-status.svg?path=packages/memcache-client
 
 [daviddm-opt-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-client
+
+[node-zstd]: https://github.com/zwb-ict/node-zstd
+
+[mcrouter]: https://github.com/facebook/mcrouter
+
+[mcrouter allasyncroute]: https://github.com/facebook/mcrouter/wiki/List-of-Route-Handles#allasyncroute
