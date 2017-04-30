@@ -6,6 +6,7 @@ const optionalRequire = require("optional-require")(require);
 const Promise = optionalRequire("bluebird", { message: false, default: global.Promise });
 const MemcacheParser = require("memcache-parser");
 const cmdActions = require("./cmd-actions");
+const defaults = require("./defaults");
 
 /* eslint-disable no-bitwise,no-magic-numbers,max-params,no-unused-vars */
 /* eslint-disable no-console,camelcase,max-statements,no-var */
@@ -33,7 +34,10 @@ class MemcacheConnection extends MemcacheParser {
     this._connectPromise = undefined;
     this._id = client.socketID++;
     this._checkCmdTimer = undefined;
-    this._cmdTimeout = 1000;
+    this._cmdTimeout = (client.options && client.options.cmdTimeout) || defaults.CMD_TIMEOUT_MS;
+    assert(this._cmdTimeout > 0, "cmdTimeout must be > 0");
+    this._cmdCheckInterval = Math.min(250, Math.ceil(this._cmdTimeout / 4));
+    this._cmdCheckInterval = Math.max(50, this._cmdCheckInterval);
     this._status = Status.INIT;
   }
 
@@ -227,7 +231,7 @@ class MemcacheConnection extends MemcacheParser {
 
   _startCmdTimeout() {
     if (!this._checkCmdTimer) {
-      this._checkCmdTimer = setTimeout(this._checkCmdTimeout.bind(this), 250);
+      this._checkCmdTimer = setTimeout(this._checkCmdTimeout.bind(this), this._cmdCheckInterval);
     }
   }
 

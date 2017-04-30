@@ -518,7 +518,7 @@ describe("memcache client", function () {
     }
     let firstConnId = 0;
     let timeoutError;
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient({ server, cmdTimeout: 100 });
     return x.cmd("stats").then((v) => {
       firstConnId = v.STAT[2][1];
       memcachedServer.pause();
@@ -532,6 +532,7 @@ describe("memcache client", function () {
         return x.cmd("stats");
       })
       .then((v) => {
+        expect(x._node.connections[0]._cmdTimeout).to.equal(100);
         expect(firstConnId).to.not.equal(0);
         expect(firstConnId).to.not.equal(v.STAT[2][1]);
       })

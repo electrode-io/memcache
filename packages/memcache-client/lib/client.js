@@ -8,11 +8,10 @@ const nodeify = require("./nodeify");
 const ValuePacker = require("./value-packer");
 const nullLogger = require("./null-logger");
 const MemcacheNode = require("./memcache-node");
+const defaults = require("./defaults");
 
 /* eslint-disable no-bitwise,no-magic-numbers,max-params,max-statements,no-var */
 /* eslint max-len:[2,120] */
-
-const DEFAULT_MAX_CONNECTIONS = 1;
 
 class MemcacheClient {
   constructor(options) {
@@ -21,12 +20,13 @@ class MemcacheClient {
     this.socketID = 1;
     this._packer = new ValuePacker(options.compressor || Zstd);
     this._logger = options.logger !== undefined ? options.logger : nullLogger;
-    let maxConnections = DEFAULT_MAX_CONNECTIONS;
+    let maxConnections = defaults.MAX_CONNECTIONS;
     let server = options.server;
     if (typeof server === "object") {
-      maxConnections = server.maxConnections || DEFAULT_MAX_CONNECTIONS;
+      maxConnections = server.maxConnections || defaults.MAX_CONNECTIONS;
       server = server.server;
     }
+    this.options.cmdTimeout = options.cmdTimeout || defaults.CMD_TIMEOUT_MS;
     this._node = new MemcacheNode(this, { server, maxConnections });
   }
 
