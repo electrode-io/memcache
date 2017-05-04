@@ -1,7 +1,7 @@
 {
   "lerna": "2.0.0-rc.1",
   "version": "independent",
-  "publishConfig": {
+  "command.publish.ignore": {
     "ignore": [
       "*.md"
     ]
