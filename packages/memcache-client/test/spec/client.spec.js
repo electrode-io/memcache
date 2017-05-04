@@ -148,6 +148,14 @@ describe("memcache client", function () {
       .then(() => expect(testError.message).includes("ECONNREFUSED"));
   });
 
+
+  it("should handle connection timeout", () => {
+    const x = new MemcacheClient({ server: "192.168.255.1:8181", connectTimeout: 50 });
+    let testError;
+    return x.cmd("stats").catch((err) => (testError = err))
+      .then(() => expect(testError.message).includes("connect timeout"));
+  });
+
   it("should take a custom logger if it's not undefined", () => {
     const x = new MemcacheClient({ server, logger: null });
     expect(x._logger).to.be.null;

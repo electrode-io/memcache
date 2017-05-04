@@ -54,8 +54,19 @@ class MemcacheConnection extends MemcacheParser {
     this._connectPromise = new Promise((resolve, reject) => {
       this._status = Status.CONNECTING;
 
+      const connTimeout = setTimeout(() => {
+        socket.removeAllListeners("error");
+        socket.removeAllListeners("connect");
+        this._shutdown("connect timeout");
+        const err = new Error("connect timeout");
+        err.connecting = true;
+        reject(err);
+      }, this.client.options.connectTimeout || defaults.CONNECT_TIMEOUT_MS);
+
       socket.once("error", (err) => {
         this._shutdown("connect failed");
+        clearTimeout(connTimeout);
+        err.connecting = true;
         reject(err);
       });
 
@@ -66,6 +77,7 @@ class MemcacheConnection extends MemcacheParser {
         console.log("connected to", host, port);
         socket.removeAllListeners("error");
         this._setupConnection(socket);
+        clearTimeout(connTimeout);
         resolve(this);
       });
     });
