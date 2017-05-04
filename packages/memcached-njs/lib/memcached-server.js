@@ -22,10 +22,18 @@ const replies = {
   CLIENT_ERROR: "CLIENT_ERROR"
 };
 
+const logger = {
+  debug: (msg) => console.log(msg),
+  info: (msg) => console.log(msg),
+  warn: (msg) => console.log(msg),
+  error: (msg) => console.log(msg)
+};
+
 class Connection extends MemcacheParser {
   constructor(server, socket) {
     super();
     this.server = server;
+    this.logger = server.logger;
     this.socket = socket;
     this._id = server.getNewClientID();
     this._dataQueue = [];
@@ -33,7 +41,7 @@ class Connection extends MemcacheParser {
 
     socket.on("data", (data) => {
       if (this._isPaused) {
-        console.log("server paused, queueing data");
+        this.logger.info("server paused, queueing data");
         this._dataQueue.unshift(data);
       } else {
         this.onData(data);
@@ -41,7 +49,7 @@ class Connection extends MemcacheParser {
     });
 
     socket.on("end", () => {
-      console.log("connection", this._id, "end");
+      this.logger.info("connection", this._id, "end");
       this.server.end(this);
     });
   }
@@ -99,6 +107,7 @@ class MemcacheServer {
     this._clients = new Map();
     this.options = options;
     this._isPaused = false;
+    this.logger = options.logger || logger;
   }
 
   startup() {
@@ -113,7 +122,7 @@ class MemcacheServer {
 
       server.listen(this.options.port, () => {
         this._port = server.address().port;
-        console.log("server listening at port", this._port);
+        this.logger.info(`server listening at port ${this._port}`);
         server.removeAllListeners("error");
         server.on("error", this._onError.bind(this));
         resolve(this);
@@ -134,7 +143,7 @@ class MemcacheServer {
   }
 
   _onError(err) {
-    console.log("server error", err);
+    this.logger.info(`server error ${err}`);
   }
 
   getNewClientID() {
@@ -387,12 +396,12 @@ class MemcacheServer {
         const e = cache.get(key);
         const casId = cmdTokens[0] === "gets" ? ` ${e.casId}` : "";
         const msg = `VALUE ${key} ${e.flag} ${e.data.length}${casId}\r\n`;
-        console.log("returning", msg);
+        this.logger.info(`returning ${msg}`);
         connection.send(msg);
         connection.send(e.data);
         connection.send("\r\n");
       } else {
-        console.log("get", key, "not found");
+        this.logger.info(`get ${key} not found`);
       }
     };
     var i;
@@ -875,7 +884,7 @@ class MemcacheServer {
     });
     this._clients.clear();
     this._server.close();
-    console.log("server shutdown");
+    this.logger.info("server shutdown");
   }
 }
 
