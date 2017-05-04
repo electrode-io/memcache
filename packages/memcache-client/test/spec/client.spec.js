@@ -148,6 +148,12 @@ describe("memcache client", function () {
       .then(() => expect(testError.message).includes("ECONNREFUSED"));
   });
 
+  it("should handle ENOTFOUND", () => {
+    const x = new MemcacheClient({ server: "badhost:65000" });
+    let testError;
+    return x.cmd("stats").catch((err) => (testError = err))
+      .then(() => expect(testError.message).includes("ENOTFOUND"));
+  });
 
   it("should handle connection timeout", () => {
     const x = new MemcacheClient({ server: "192.168.255.1:8181", connectTimeout: 50 });
