@@ -2,6 +2,7 @@
 
 const defaults = require("./defaults");
 const MemcacheNode = require("./memcache-node");
+const assert = require("assert");
 
 /*
  * Manage a pool of redundant servers
@@ -13,12 +14,19 @@ class RedundantServers {
     let servers;
     let maxConnections = defaults.MAX_CONNECTIONS;
     if (typeof server === "object") {
-      maxConnections = server.maxConnections || defaults.MAX_CONNECTIONS;
-      servers = [{ server: server.server, maxConnections }];
+      if (server.server) {
+        maxConnections = server.maxConnections || defaults.MAX_CONNECTIONS;
+        servers = [{ server: server.server, maxConnections }];
+      } else {
+        servers = server.servers;
+        assert(servers, "no servers provided");
+        assert(Array.isArray(servers), "servers is not an array");
+      }
     } else {
       servers = [{ server, maxConnections }];
     }
     this._servers = servers;
+    this._exServers = []; // servers that failed connection
     this._nodes = {};
     this._config = server.config || {};
   }
@@ -32,11 +40,31 @@ class RedundantServers {
 
   doCmd(action) {
     const node = this._getNode();
-    return node.doCmd(action);
+    return node.doCmd(action).catch((err) => {
+      // not connecting error or no more server to try
+      if (!err.connecting || this._servers.length === 1) {
+        // see if there's any exServers to retry
+        throw err;
+      }
+      const s = node.options.server;
+      const _servers = [];
+      for (let i = 0; i < this._servers.length; i++) {
+        if (s === this._servers[i].server) {
+          this._exServers.push(this._servers[i]);
+        } else {
+          _servers.push(this._servers[i]);
+        }
+      }
+      this._servers = _servers;
+      return this.doCmd(action);
+    });
   }
 
   _getNode() {
-    const server = this._servers[0];
+    const n = this._servers.length > 1
+      ? Math.floor(Math.random() * this._servers.length)
+      : 0;
+    const server = this._servers[n];
     let node = this._nodes[server.server];
     if (node) {
       return node;
