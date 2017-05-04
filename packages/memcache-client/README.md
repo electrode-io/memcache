@@ -159,6 +159,27 @@ module.exports = {
 };
 ```
 
+#### Multiple redundant servers support
+
+If you have multiple redundant servers, you can pass them to the client with the `server` option:
+
+```js
+{
+  server: {
+    servers: [
+      { 
+        server: "name1.domain.com:11211",
+        maxConnections: 3
+      },
+      {
+        server: "name2.domain.com:11211",
+        maxConnections: 3
+      }
+    ]
+  }
+}
+```
+
 ### Command Options
 
 #### `noreply`
