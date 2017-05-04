@@ -39,13 +39,15 @@ class RedundantServers {
   }
 
   doCmd(action) {
+    if (this._servers.length === 1) {
+      return this._getNode().doCmd(action);
+    }
     const node = this._getNode();
     return node.doCmd(action).catch((err) => {
-      // not connecting error or no more server to try
-      if (!err.connecting || this._servers.length === 1) {
-        // see if there's any exServers to retry
+      if (!err.connecting) {
         throw err;
       }
+      // failed to connect to server, exile it
       const s = node.options.server;
       const _servers = [];
       for (let i = 0; i < this._servers.length; i++) {
