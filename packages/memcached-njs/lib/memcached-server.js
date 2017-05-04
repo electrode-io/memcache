@@ -112,7 +112,8 @@ class MemcacheServer {
       });
 
       server.listen(this.options.port, () => {
-        console.log("server listening at port", server.address().port);
+        this._port = server.address().port;
+        console.log("server listening at port", this._port);
         server.removeAllListeners("error");
         server.on("error", this._onError.bind(this));
         resolve(this);
@@ -788,6 +789,7 @@ class MemcacheServer {
       "STAT foo bar",
       "STAT hello world",
       `STAT connection ${connection._id}`,
+      `STAT port ${this._port}`,
       "END"].join("\r\n"));
     connection.send("\r\n");
   }
