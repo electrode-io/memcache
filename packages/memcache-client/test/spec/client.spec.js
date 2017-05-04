@@ -244,7 +244,7 @@ describe("memcache client", function () {
         x.send((socket) => socket.write(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`))
           .then(verifyResults)
       )
-      .then(() => expect(x._node.connections.length).to.equal(expectedConnections))
+      .then(() => expect(x._servers._getNode().connections.length).to.equal(expectedConnections))
       .finally(() => x.shutdown());
   };
 
@@ -487,7 +487,7 @@ describe("memcache client", function () {
     const x = new MemcacheClient({ server });
     return x.cmd("stats").then((v) => {
       firstConnId = v.STAT[2][1];
-      x._node.connections[0].socket.emit("error", new Error("ECONNRESET"));
+      x._servers._getNode().connections[0].socket.emit("error", new Error("ECONNRESET"));
     })
       .then(() => x.cmd("stats")).then((v) => {
         expect(firstConnId).to.not.equal(0);
@@ -504,7 +504,7 @@ describe("memcache client", function () {
     const x = new MemcacheClient({ server });
     return x.cmd("stats").then((v) => {
       firstConnId = v.STAT[2][1];
-      x._node.connections[0].socket.emit("timeout");
+      x._servers._getNode().connections[0].socket.emit("timeout");
     })
       .then(() => x.cmd("stats")).then((v) => {
         expect(firstConnId).to.not.equal(0);
@@ -532,7 +532,7 @@ describe("memcache client", function () {
         return x.cmd("stats");
       })
       .then((v) => {
-        expect(x._node.connections[0]._cmdTimeout).to.equal(100);
+        expect(x._servers._getNode().connections[0]._cmdTimeout).to.equal(100);
         expect(firstConnId).to.not.equal(0);
         expect(firstConnId).to.not.equal(v.STAT[2][1]);
       })
