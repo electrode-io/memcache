@@ -125,6 +125,7 @@ const options = {
   ignoreNotStored: true, // ignore NOT_STORED response
   lifetime: 100, // TTL 100 seconds
   cmdTimeout: 3000, // command timeout in milliseconds
+  connectTimeout: 8000, // connect to server timeout in ms
   compressor: require("custom-compressor"),
   logger: require("./custom-logger")
 };
@@ -144,6 +145,8 @@ const client = new MemcacheClient(options);
 -   `lifetime` - **_optional_** Your cache TTL in **_seconds_** to use for all entries.  Default is 60 seconds.
 -   `cmdTimeout` - **_optional_** Command timeout in milliseconds.  Default is 5000 ms.
     -   If a command didn't receive response before this timeout value, then it will cause the connection to shutdown and returns Error.
+-   `connectTimeout` - **_optional_** Connect to server timeout in milliseconds. Default is 5000 ms.
+    -   The error object from this will have `connecting` set to `true`
 -   `compressor` - **_optional_** a custom compressor for compressing the data.  By default [node-zstd] is used.
     -   It should provide two methods that take `Buffer` value, and return result as `Buffer`.
         -   `compressSync(value)` 
