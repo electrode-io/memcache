@@ -4,12 +4,15 @@ const MemcacheParser = require("../..");
 const chai = require("chai");
 const expect = chai.expect;
 const assert = chai.assert;
+const nullLogger = require("../null-logger");
 
 /* eslint-disable no-return-assign */
 
 describe("memcache-parser", function () {
   it("should have defaultLogger", () => {
-    expect(new MemcacheParser().logger).to.be.ok;
+    const x = new MemcacheParser();
+    expect(x.logger).to.be.ok;
+    x.logger.info("test log");
   });
 
   it("should accept customLogger", () => {
@@ -18,11 +21,11 @@ describe("memcache-parser", function () {
   });
 
   it("should have default processCmd", () => {
-    expect(new MemcacheParser().processCmd([1, 2, 3])).to.equal(3);
+    expect(new MemcacheParser(nullLogger).processCmd([1, 2, 3])).to.equal(3);
   });
 
   it("should have default receiveResult", () => {
-    expect(new MemcacheParser().receiveResult("test")).to.equal("test");
+    expect(new MemcacheParser(nullLogger).receiveResult("test")).to.equal("test");
   });
 
   it("should have default malformDataStream", () => {
@@ -62,7 +65,7 @@ describe("memcache-parser", function () {
   });
 
   it("should initiatePending", () => {
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     const tokens = ["test", "0", "0", "100"];
     parser.initiatePending(tokens, 100);
     expect(parser._pending).to.be.ok;
@@ -74,17 +77,17 @@ describe("memcache-parser", function () {
   });
 
   it("_copyPending should ignore undefined data", () => {
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     expect(parser._copyPending(undefined)).to.equal(undefined);
   });
 
   it("_copyPending should throw for null data", () => {
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     expect(() => parser._copyPending(null)).to.throw(Error);
   });
 
   it("should process command", () => {
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     let cmdTokens;
     parser.processCmd = (tokens) => {
       cmdTokens = tokens;
@@ -94,7 +97,7 @@ describe("memcache-parser", function () {
   });
 
   it("should process command in chunks", () => {
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     let cmdTokens;
     parser.processCmd = (tokens) => {
       cmdTokens = tokens;
@@ -110,7 +113,7 @@ describe("memcache-parser", function () {
   });
 
   it("should preserve unicode in command line", () => {
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     let cmdTokens;
     parser.processCmd = (tokens) => {
       cmdTokens = tokens;
@@ -123,7 +126,7 @@ describe("memcache-parser", function () {
 
   it("should error on empty command lines", () => {
     let cmdTokens;
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     parser.malformCommand = (x) => cmdTokens = x;
     parser.onData(Buffer.from("\r\n"));
     expect(cmdTokens).to.deep.equal([""]);
@@ -131,7 +134,7 @@ describe("memcache-parser", function () {
 
   it("should error on empty command", () => {
     let cmdTokens;
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     parser.malformCommand = (x) => cmdTokens = x;
     parser.onData(Buffer.from(" \r\n"));
     expect(cmdTokens).to.deep.equal(["", ""]);
@@ -139,7 +142,7 @@ describe("memcache-parser", function () {
 
   it("should error on unknown command", () => {
     let cmdTokens;
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     parser.processCmd = () => false;
     parser.unknownCmd = (x) => cmdTokens = x;
     parser.onData(Buffer.from("test 0 0 30\r\n"));
@@ -148,7 +151,7 @@ describe("memcache-parser", function () {
 
   it("should consume pending data in a single chunk", () => {
     let pending;
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     parser.processCmd = function (tokens) {
       this.initiatePending(tokens, +tokens[3]);
     };
@@ -164,7 +167,7 @@ describe("memcache-parser", function () {
     let pending;
     let data;
     let copied;
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     parser.processCmd = function (tokens) {
       this.initiatePending(tokens, +tokens[3]);
     };
@@ -179,7 +182,7 @@ describe("memcache-parser", function () {
 
   it("should consume pending data in splitted chunks", () => {
     let pending;
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     parser.processCmd = function (tokens) {
       this.initiatePending(tokens, +tokens[3]);
     };
@@ -197,7 +200,7 @@ describe("memcache-parser", function () {
   it("should handle multiple commands", () => {
     let pending;
     let cmdTokens2;
-    const parser = new MemcacheParser();
+    const parser = new MemcacheParser(nullLogger);
     parser.processCmd = function (tokens) {
       if (tokens[0] === "set") {
         this.initiatePending(tokens, +tokens[3]);
