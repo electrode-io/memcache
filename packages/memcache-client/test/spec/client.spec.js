@@ -31,8 +31,11 @@ describe("memcache client", function () {
     if (memcachedServer) {
       memcachedServer.shutdown();
     }
-    console.log("port", port);
-    return memcached.startServer(port && { port }).then((ms) => {
+    const options = { logger: require("../../lib/null-logger") };
+    if (port) {
+      options.port = port;
+    }
+    return memcached.startServer(options).then((ms) => {
       console.log("memcached server started");
       server = `localhost:${ms._server.address().port}`;
       memcachedServer = ms;

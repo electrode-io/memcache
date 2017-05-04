@@ -17,10 +17,14 @@ describe("redundant servers", function () {
     console.log("unhandledRejection", e);
   });
 
+  const serverOptions = {
+    logger: require("../../lib/null-logger")
+  };
+
   it("should use multiple servers", () => {
     let memcachedServers;
     return Promise.resolve(new Array(6))
-      .map(() => memcached.startServer())
+      .map(() => memcached.startServer(serverOptions))
       .then((servers) => {
         memcachedServers = servers;
         const ports = servers.map((s) => s._server.address().port);
@@ -38,7 +42,6 @@ describe("redundant servers", function () {
               return stat.STAT.find((j) => j[0] === "port")[1];
             });
             const ms = _.uniq(m);
-            console.log(ms);
             expect(ms).to.have.length.above(1);
           });
       })
@@ -51,7 +54,7 @@ describe("redundant servers", function () {
   it("should use exile connect fail server", () => {
     let memcachedServers;
     return Promise.resolve(new Array(4))
-      .map(() => memcached.startServer())
+      .map(() => memcached.startServer(serverOptions))
       .then((servers) => {
         memcachedServers = servers;
         const ports = servers.map((s) => s._server.address().port);
@@ -84,7 +87,7 @@ describe("redundant servers", function () {
   it("should rethrow non-connect errors", () => {
     let memcachedServers;
     return Promise.resolve(new Array(4))
-      .map(() => memcached.startServer())
+      .map(() => memcached.startServer(serverOptions))
       .then((servers) => {
         memcachedServers = servers;
         const ports = servers.map((s) => s._server.address().port);

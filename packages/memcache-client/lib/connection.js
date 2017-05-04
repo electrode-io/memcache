@@ -49,7 +49,6 @@ class MemcacheConnection extends MemcacheParser {
     assert(host, "Must provide server hostname");
     assert(typeof port === "number" && port > 0, "Must provide valid server port");
 
-    console.log("connecting to", host, port);
     const socket = Net.createConnection({ host, port });
     this._connectPromise = new Promise((resolve, reject) => {
       this._status = Status.CONNECTING;
@@ -74,7 +73,6 @@ class MemcacheConnection extends MemcacheParser {
         this.socket = socket;
         this._status = Status.READY;
         this._connectPromise = undefined;
-        console.log("connected to", host, port);
         socket.removeAllListeners("error");
         this._setupConnection(socket);
         clearTimeout(connTimeout);
