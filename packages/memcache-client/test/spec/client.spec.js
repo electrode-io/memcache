@@ -122,6 +122,34 @@ describe("memcache client", function () {
     expect(testOptions.lifetime).to.equal(500);
   });
 
+  it("should ignore NOT_STORED reply for set if client ignore option is true", () => {
+    const x = new MemcacheClient({ server, ignoreNotStored: true });
+    memcachedServer.asyncMode(true);
+    return x.set("key", "data")
+      .finally(() => memcachedServer.asyncMode(false));
+  });
+
+  it("should ignore NOT_STORED reply for set if command ignore option is true", () => {
+    const x = new MemcacheClient({ server });
+    memcachedServer.asyncMode(true);
+    return x.set("key", "data", { ignoreNotStored: true })
+      .finally(() => memcachedServer.asyncMode(false));
+  });
+
+
+  it("should return set errors other than NOT_STORED even if ignore option is true", () => {
+    const x = new MemcacheClient({ server, ignoreNotStored: true, cmdTimeout: 100 });
+    memcachedServer.pause();
+    let testErr;
+    return x.set("key", "data")
+      .catch((err) => (testErr = err))
+      .then(() => {
+        expect(testErr.message).to.equal("Command timeout");
+      })
+      .finally(() => memcachedServer.unpause());
+  });
+
+
   const testMulti = (maxConnections) => {
     const key1 = "text1维基百科";
     const key2 = "blah";
@@ -131,7 +159,7 @@ describe("memcache client", function () {
     const numValue = 12345;
     const binValue = Buffer.allocUnsafe(1500);
     const jsonData = { "天津经济技术开发区": text2 };
-    const x = new MemcacheClient({ server: { server, maxConnections }, ignoreNotStored: true });
+    const x = new MemcacheClient({ server: { server, maxConnections } });
 
     const expectedConnections = maxConnections === undefined ? 1 : (maxConnections < 5 ? maxConnections : 5);
 

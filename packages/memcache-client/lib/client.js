@@ -75,6 +75,10 @@ class MemcacheClient {
 
   // "set" means "store this data".
   set(key, value, options, callback) {
+    options = options || {};
+    if (options.ignoreNotStored === undefined) {
+      options.ignoreNotStored = this.options.ignoreNotStored;
+    }
     return this.store("set", key, value, options, callback);
   }
 
@@ -205,7 +209,12 @@ class MemcacheClient {
         const context = {
           results: {},
           callback: (err, result) => {
-            if (err) return reject(err);
+            if (err) {
+              if (options.ignoreNotStored === true && err.message === "NOT_STORED") {
+                return resolve("ignore NOT_STORED");
+              }
+              return reject(err);
+            }
             return resolve(result || context.results);
           }
         };
