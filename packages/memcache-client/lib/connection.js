@@ -106,7 +106,7 @@ class MemcacheConnection extends MemcacheParser {
     } else if (this.isReady()) {
       return Promise.resolve(this);
     } else {
-      throw new Error("MemcacheConnection can't waitReady for status", this._status);
+      throw new Error(`MemcacheConnection can't waitReady for status ${this.getStatusStr()}`);
     }
   }
 
