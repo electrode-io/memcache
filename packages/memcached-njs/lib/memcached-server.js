@@ -274,7 +274,7 @@ class MemcacheServer {
       return this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
     }
 
-    this._reply(connection, pending.cmdTokens, replies.STORED);
+    return this._reply(connection, pending.cmdTokens, replies.STORED);
   }
 
   // "set" means "store this data".
