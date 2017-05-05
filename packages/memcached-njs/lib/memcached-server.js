@@ -142,6 +142,10 @@ class MemcacheServer {
     this._clients.forEach((x) => x.connection.unpause());
   }
 
+  asyncMode(flag) {
+    this._asyncMode = flag;
+  }
+
   _onError(err) {
     this.logger.info(`server error ${err}`);
   }
@@ -266,6 +270,10 @@ class MemcacheServer {
       casId: this.getNextCasID()
     };
     this._cache.set(pending.cmdTokens[1], e);
+    if (pending.cmdTokens[0] === "set" && this._asyncMode) {
+      return this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
+    }
+
     this._reply(connection, pending.cmdTokens, replies.STORED);
   }
 
