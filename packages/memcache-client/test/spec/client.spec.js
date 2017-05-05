@@ -66,7 +66,7 @@ describe("memcache client", function () {
   });
 
   it("should handle ENOTFOUND", () => {
-    const x = new MemcacheClient({ server: "badhost:65000" });
+    const x = new MemcacheClient({ server: "badhost.baddomain.com:65000" });
     let testError;
     return x.cmd("stats").catch((err) => (testError = err))
       .then(() => expect(testError.message).includes("ENOTFOUND"));

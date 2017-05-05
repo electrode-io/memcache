@@ -178,10 +178,19 @@ If you have multiple redundant servers, you can pass them to the client with the
         server: "name2.domain.com:11211",
         maxConnections: 3
       }
-    ]
-  }
+    ],
+    config: {
+      retryFailedServerInterval: 1000, // milliseconds - how often to check failed servers
+      failedServerOutTime: 30000 // (ms) how long a failed server should be out before retrying it
+    }
+  },
 }
 ```
+
+You can also pass in `server.config` with the following options:
+
+-   `retryFailedServerInterval` - (ms) how often to check failed servers.  Default 10000 ms (10 secs)
+-   `failedServerOutTime` - (ms) how long a failed server should be out before retrying it.  Default 60000 ms (1 min).
 
 ### Command Options
 

@@ -110,4 +110,50 @@ describe("redundant servers", function () {
         memcachedServers.forEach((s) => s.shutdown());
       });
   });
+
+  it("should retry exiled servers after time interval", () => {
+    let memcachedServers;
+    return Promise.resolve(new Array(4))
+      .map(() => memcached.startServer(serverOptions))
+      .then((servers) => {
+        memcachedServers = servers;
+        const ports = servers.map((s) => s._server.address().port);
+        servers = ports.map((p) => ({ server: `localhost:${p}`, maxConnections: 3 }));
+
+        const x = new MemcacheClient({
+          server: {
+            servers,
+            config: {
+              retryFailedServerInterval: 10,
+              failedServerOutTime: 100
+            }
+          },
+          cmdTimeout: 100
+        });
+        memcachedServers[1].shutdown();
+        memcachedServers[2].shutdown();
+        memcachedServers[3].shutdown();
+        return Promise.resolve(new Array(8))
+          .map(() => x.cmd("stats"), { concurrency: 8 })
+          .then(() => expect(x._servers._exServers).to.have.length(3))
+          .delay(100)
+          .then(() => Promise.all([1, 2, 3].map((i) => memcached.startServer({
+            port: ports[i],
+            logger: require("../../lib/null-logger")
+          }))))
+          .then(() => new Array(8))
+          .map(() => x.cmd("stats"), { concurrency: 8 })
+          .then((r) => {
+            expect(x._servers._exServers).to.have.length(0);
+            const m = r.map((stat) => {
+              return stat.STAT.find((j) => j[0] === "port")[1];
+            });
+            const ms = _.uniq(m);
+            expect(ms).to.have.length.above(1);
+          });
+      })
+      .finally(() => {
+        memcachedServers.forEach((s) => s.shutdown());
+      });
+  });
 });

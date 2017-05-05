@@ -3,6 +3,9 @@
 const defaults = require("./defaults");
 const MemcacheNode = require("./memcache-node");
 const assert = require("assert");
+const _defaults = require("lodash.defaults");
+
+/* eslint-disable max-statements,no-magic-numbers */
 
 /*
  * Manage a pool of redundant servers
@@ -28,7 +31,10 @@ class RedundantServers {
     this._servers = servers;
     this._exServers = []; // servers that failed connection
     this._nodes = {};
-    this._config = server.config || {};
+    this._config = _defaults(server.config, {
+      failedServerOutTime: defaults.FAILED_SERVER_OUT_TIME,
+      retryFailedServerInterval: defaults.RETRY_FAILED_SERVER_INTERVAL
+    });
   }
 
   shutdown() {
@@ -39,6 +45,9 @@ class RedundantServers {
   }
 
   doCmd(action) {
+    if (this._exServers.length > 0) {
+      this._retryServers();
+    }
     if (this._servers.length === 1) {
       return this._getNode().doCmd(action);
     }
@@ -52,6 +61,7 @@ class RedundantServers {
       const _servers = [];
       for (let i = 0; i < this._servers.length; i++) {
         if (s === this._servers[i].server) {
+          this._servers[i].exiledTime = Date.now();
           this._exServers.push(this._servers[i]);
         } else {
           _servers.push(this._servers[i]);
@@ -60,6 +70,27 @@ class RedundantServers {
       this._servers = _servers;
       return this.doCmd(action);
     });
+  }
+
+  _retryServers() {
+    const now = Date.now();
+    if (now - this._lastRetryTime < this._config.retryFailedServerInterval) {
+      return;
+    }
+    this._lastRetryTime = now;
+    let i;
+    let n = 0;
+    for (i = 0; i < this._exServers.length; i++) {
+      const es = this._exServers[i];
+      if (now - es.exiledTime >= this._config.failedServerOutTime) {
+        delete es.exiledTime;
+        this._servers.push(es);
+        n++;
+      }
+    }
+    if (n > 0) {
+      this._exServers = this._exServers.filter((x) => x.exiledTime !== undefined);
+    }
   }
 
   _getNode() {

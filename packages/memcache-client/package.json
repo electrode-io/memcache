@@ -22,6 +22,7 @@
   "author": "Joel Chen <joel123@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
+    "lodash.defaults": "^4.2.0",
     "memcache-parser": "^0.2.3",
     "optional-require": "^1.0.0"
   },
