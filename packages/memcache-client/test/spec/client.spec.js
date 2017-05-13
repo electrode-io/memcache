@@ -10,6 +10,7 @@ const Fs = require("fs");
 const Path = require("path");
 const memcached = require("memcached-njs");
 const text = require("../data/text");
+const ValueFlags = require("../../lib/value-flags");
 
 describe("memcache client", function () {
   process.on("unhandledRejection", (e) => {
@@ -247,6 +248,22 @@ describe("memcache client", function () {
         expect(testError.message).include("circular structure");
       });
   });
+
+  it("should handle error if can't JSON.parse value", () => {
+    const a = {};
+    const b = { a };
+    a.b = b;
+    const x = new MemcacheClient({ server });
+    const objFlag = ValueFlags.TYPE_JSON;
+    let testError;
+    return x.send(`set foo ${objFlag} 60 5\r\nabcde\r\n`)
+      .then(() => x.get("foo"))
+      .catch((err) => (testError = err))
+      .then((r) => {
+        expect(testError.message).include("Unexpected token a");
+      });
+  });
+
 
   it("should set a binary file and get it back correctly", () => {
     const key1 = `image_${Date.now()}`;

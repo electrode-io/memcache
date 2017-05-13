@@ -207,6 +207,7 @@ class MemcacheClient {
       ? Promise.resolve()
       : new Promise((resolve, reject) => {
         const context = {
+          error: null,
           results: {},
           callback: (err, result) => {
             if (err) {
@@ -215,7 +216,13 @@ class MemcacheClient {
               }
               return reject(err);
             }
-            return resolve(result || context.results);
+            if (result) {
+              return resolve(result);
+            } else if (context.error) {
+              return reject(context.error);
+            } else {
+              return resolve(context.results);
+            }
           }
         };
 

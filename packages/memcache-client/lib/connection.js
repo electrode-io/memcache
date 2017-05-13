@@ -135,11 +135,15 @@ class MemcacheConnection extends MemcacheParser {
   receiveResult(pending) {
     if (this.isReady()) {
       const retrieve = this.peekCommand();
-      retrieve.results[pending.cmdTokens[1]] = {
-        tokens: pending.cmdTokens,
-        casUniq: pending.cmdTokens[4],
-        value: this.client._unpackValue(pending)
-      };
+      try {
+        retrieve.results[pending.cmdTokens[1]] = {
+          tokens: pending.cmdTokens,
+          casUniq: pending.cmdTokens[4],
+          value: this.client._unpackValue(pending)
+        };
+      } catch (err) {
+        retrieve.error = err;
+      }
     }
     delete pending.data;
   }

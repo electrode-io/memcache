@@ -13,6 +13,7 @@ Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to p
 -   Optional compression for the data before sending to memcached
 -   Auto reconnects when there's network error or timeout
 -   Support sending arbitrary commands.  Read up on the [protocol doc here](https://github.com/memcached/memcached/blob/master/doc/protocol.txt).
+-   Support storing `string`, `numeric`, and `JSON` values
 -   APIs Support callback or Promise
 -   Support fire and forget requests
 -   Support multiple connections
@@ -114,6 +115,8 @@ All take an optional `callback`.  If it's not provided then all return a `Promis
 -   `client.decr(key, value, [options], [callback])`
 -   `client.touch(key, exptime, [options], [callback])`
 -   `client.version([callback])`
+
+> For all store commands, `set`, `add`, `replace`, `append`, `prepend`, and `cas`, the data can be a `string`, `number`, or a `JSON` object.
 
 ### Client Options
 

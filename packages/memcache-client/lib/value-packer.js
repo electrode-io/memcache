@@ -4,12 +4,7 @@
 /* eslint max-len:[2,120] */
 
 const assert = require("assert");
-
-const FLAG_COMPRESS = 1;
-const FLAG_TYPE_JSON = 1 << 1;
-const FLAG_TYPE_NUMERIC = 1 << 2;
-const FLAG_TYPE_BINARY = 1 << 3;
-const FLAG_TYPE_ALL = FLAG_TYPE_JSON | FLAG_TYPE_NUMERIC | FLAG_TYPE_BINARY;
+const ValueFlags = require("./value-flags");
 
 class ValuePacker {
   constructor(compressor) {
@@ -22,18 +17,18 @@ class ValuePacker {
 
     var flag = 0;
     if (isBuffer) {
-      flag = FLAG_TYPE_BINARY;
+      flag = ValueFlags.TYPE_BINARY;
     } else if (valueType === "number") {
-      flag = FLAG_TYPE_NUMERIC;
+      flag = ValueFlags.TYPE_NUMERIC;
       value = JSON.stringify(value);
     } else if (valueType === "object") {
-      flag = FLAG_TYPE_JSON;
+      flag = ValueFlags.TYPE_JSON;
       value = JSON.stringify(value);
     }
 
     if (compress && value.length >= 100) {
       assert(this.compressor !== undefined, "No compressor available to compress value");
-      flag |= FLAG_COMPRESS;
+      flag |= ValueFlags.COMPRESS;
       if (!isBuffer) {
         value = Buffer.from(value);
       }
@@ -45,7 +40,7 @@ class ValuePacker {
 
   unpack(packed) {
     const flag = packed.flag;
-    const compress = (flag & FLAG_COMPRESS) === FLAG_COMPRESS;
+    const compress = (flag & ValueFlags.COMPRESS) === ValueFlags.COMPRESS;
 
     var data = packed.data;
 
@@ -54,13 +49,13 @@ class ValuePacker {
       data = this.compressor.decompressSync(data);
     }
 
-    const type = flag & FLAG_TYPE_ALL;
+    const type = flag & ValueFlags.TYPE_ALL;
 
-    if (type === FLAG_TYPE_NUMERIC) {
+    if (type === ValueFlags.TYPE_NUMERIC) {
       data = +data.toString();
-    } else if (type === FLAG_TYPE_JSON) {
+    } else if (type === ValueFlags.TYPE_JSON) {
       data = JSON.parse(data);
-    } else if (type !== FLAG_TYPE_BINARY) {
+    } else if (type !== ValueFlags.TYPE_BINARY) {
       data = data.toString();
     }
 
