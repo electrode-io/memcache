@@ -1,6 +1,6 @@
 {
   "name": "memcached-njs",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "description": "A functional memcached implemented in NodeJS for testing",
   "main": "index.js",
   "scripts": {
