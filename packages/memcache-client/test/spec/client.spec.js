@@ -235,6 +235,19 @@ describe("memcache client", function () {
     return testMulti(10);
   });
 
+  it("should handle error if can't JSON.stringify value", () => {
+    const a = {};
+    const b = { a };
+    a.b = b;
+    const x = new MemcacheClient({ server });
+    let testError;
+    return x.set("foo", a)
+      .catch((err) => (testError = err))
+      .then(() => {
+        expect(testError.message).include("circular structure");
+      });
+  });
+
   it("should set a binary file and get it back correctly", () => {
     const key1 = `image_${Date.now()}`;
     const key2 = `image_${Date.now()}`;

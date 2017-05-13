@@ -149,17 +149,17 @@ class MemcacheClient {
     }
 
     const lifetime = options.lifetime !== undefined ? options.lifetime : (this.options.lifetime || 60);
-    const packed = this._packer.pack(value, options.compress === true);
     const casUniq = options.casUniq ? ` ${options.casUniq}` : "";
     const noreply = options.noreply ? ` noreply` : "";
-    const bytes = Buffer.byteLength(packed.data);
-    const msg = `${cmd} ${key} ${packed.flag} ${lifetime} ${bytes}${casUniq}${noreply}\r\n`;
 
     //
     // store commands
     // <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
     //
     const _data = (socket) => {
+      const packed = this._packer.pack(value, options.compress === true);
+      const bytes = Buffer.byteLength(packed.data);
+      const msg = `${cmd} ${key} ${packed.flag} ${lifetime} ${bytes}${casUniq}${noreply}\r\n`;
       socket.write(msg);
       socket.write(packed.data);
       socket.write("\r\n");
