@@ -276,6 +276,23 @@ describe("memcache client", function () {
       });
   });
 
+  it("should gracefully propagate compress error", () => {
+    const compressor = {
+      compressSync: () => {
+        throw new Error("compress test failure");
+      }
+    };
+
+    const x = new MemcacheClient({ server, compressor });
+    const data = Buffer.allocUnsafe(200);
+    let testError;
+    return x.set("foo", data, { compress: true })
+      .catch((err) => (testError = err))
+      .then((r) => {
+        expect(testError.message).to.equal("compress test failure");
+      });
+  });
+
   it("should set a binary file and get it back correctly", () => {
     const key1 = `image_${Date.now()}`;
     const key2 = `image_${Date.now()}`;
