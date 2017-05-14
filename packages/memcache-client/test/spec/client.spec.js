@@ -1,6 +1,6 @@
 "use strict";
 
-/* eslint-disable no-unused-vars,no-irregular-whitespace,no-nested-ternary */
+/* eslint-disable no-bitwise,no-unused-vars,no-irregular-whitespace,no-nested-ternary */
 
 const MemcacheClient = require("../..");
 const chai = require("chai");
@@ -264,6 +264,17 @@ describe("memcache client", function () {
       });
   });
 
+  it("should gracefully propagate decompress error", () => {
+    const x = new MemcacheClient({ server });
+    const objFlag = ValueFlags.TYPE_JSON | ValueFlags.COMPRESS;
+    let testError;
+    return x.send(`set foo ${objFlag} 60 5\r\nabcde\r\n`)
+      .then(() => x.get("foo"))
+      .catch((err) => (testError = err))
+      .then((r) => {
+        expect(testError.message).include("Unknown frame descriptor");
+      });
+  });
 
   it("should set a binary file and get it back correctly", () => {
     const key1 = `image_${Date.now()}`;
