@@ -19,6 +19,7 @@ describe("memcache client", function () {
 
   let memcachedServer;
   let server;
+  let serverPort;
 
   const text1 = text.text1;
   const text2 = text.text2;
@@ -38,7 +39,8 @@ describe("memcache client", function () {
     }
     return memcached.startServer(options).then((ms) => {
       console.log("memcached server started");
-      server = `localhost:${ms._server.address().port}`;
+      serverPort = ms._server.address().port;
+      server = `localhost:${serverPort}`;
       memcachedServer = ms;
     });
   };
@@ -291,6 +293,25 @@ describe("memcache client", function () {
       .then((r) => {
         expect(testError.message).to.equal("compress test failure");
       });
+  });
+
+  this.timeout(20000);
+
+  it("should handle two thousand bad servers", () => {
+    const servers = [];
+    let port = 10000;
+    while (servers.length < 2000) {
+      port++;
+      if (port !== serverPort) {
+        servers.push({ server: `127.0.0.1:${port}`, maxConnections: 3 });
+      }
+    }
+    let testErr;
+    const x = new MemcacheClient({ server: { servers }, cmdTimeout: 20000 });
+    return x.set("foo", "hello")
+      .catch(err => (testErr = err))
+      .then(() => expect(testErr.message).include("ECONNREFUSED"))
+      .then(() => expect(x._servers._servers).to.have.length(1));
   });
 
   it("should set a binary file and get it back correctly", () => {
