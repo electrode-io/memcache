@@ -156,4 +156,27 @@ describe("redundant servers", function () {
         memcachedServers.forEach((s) => s.shutdown());
       });
   });
+
+  it("should exile all servers if keepLastServer is false", () => {
+    const ports = ["19000", "19001", "19002", "19003"];
+    const x = new MemcacheClient({
+      server: {
+        servers: ports.map((p) => ({
+          server: `localhost:${p}`,
+          maxConnections: 3
+        })),
+        config: {
+          retryFailedServerInterval: 10,
+          failedServerOutTime: 100,
+          keepLastServer: false
+        }
+      },
+      cmdTimeout: 100
+    });
+
+    let testErr;
+    return x.cmd("stats")
+      .catch(err => (testErr = err))
+      .then(() => expect(testErr.message).to.equal("No more valid servers left"));
+  });
 });

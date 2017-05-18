@@ -31,9 +31,10 @@ class RedundantServers {
     this._servers = servers;
     this._exServers = []; // servers that failed connection
     this._nodes = {};
-    this._config = _defaults(server.config, {
+    this._config = _defaults({}, server.config, {
       failedServerOutTime: defaults.FAILED_SERVER_OUT_TIME,
-      retryFailedServerInterval: defaults.RETRY_FAILED_SERVER_INTERVAL
+      retryFailedServerInterval: defaults.RETRY_FAILED_SERVER_INTERVAL,
+      keepLastServer: defaults.KEEP_LAST_SERVER
     });
   }
 
@@ -48,7 +49,10 @@ class RedundantServers {
     if (this._exServers.length > 0) {
       this._retryServers();
     }
-    if (this._servers.length === 1) {
+    if (this._servers.length === 0) {
+      throw new Error("No more valid servers left");
+    }
+    if (this._servers.length === 1 && this._config.keepLastServer === true) {
       return this._getNode().doCmd(action);
     }
     const node = this._getNode();
