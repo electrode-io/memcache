@@ -1,6 +1,6 @@
 {
   "name": "memcache-client",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "description": "NodeJS memcached client",
   "main": "lib/client.js",
   "scripts": {
@@ -23,7 +23,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "lodash.defaults": "^4.2.0",
-    "memcache-parser": "^0.2.4",
+    "memcache-parser": "^0.2.5",
     "optional-require": "^1.0.0"
   },
   "optionalDependencies": {
@@ -33,6 +33,6 @@
   "devDependencies": {
     "electrode-archetype-njs-module-dev": "^2.0.0",
     "lodash": "^4.17.4",
-    "memcached-njs": "^0.3.12"
+    "memcached-njs": "^0.3.13"
   }
 }
