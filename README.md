@@ -30,9 +30,13 @@ This repo uses [lerna](https://lernajs.io/) to manage multiple packages.
 -   [mc](http://overclocked.com/mc/)
 -   [memcachejs](https://github.com/jketterl/memcachejs)
 
-[travis-image]: https://travis-ci.org/jchip/memcache.svg?branch=master
+## License
 
-[travis-url]: https://travis-ci.org/jchip/memcache
+Apache-2.0 © [Joel Chen](https://github.com/jchip)
+
+[travis-image]: https://travis-ci.org/electrode-io/memcache.svg?branch=master
+
+[travis-url]: https://travis-ci.org/electrode-io/memcache
 
 [client-npm-image]: https://badge.fury.io/js/memcache-client.svg
 

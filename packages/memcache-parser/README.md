@@ -47,18 +47,18 @@ See memcache-client for more example usage
 
 Apache-2.0 © [Joel Chen](https://github.com/jchip)
 
-[travis-image]: https://travis-ci.org/jchip/memcache.svg?branch=master
+[travis-image]: https://travis-ci.org/electrode-io/memcache.svg?branch=master
 
-[travis-url]: https://travis-ci.org/jchip/memcache
+[travis-url]: https://travis-ci.org/electrode-io/memcache
 
 [npm-image]: https://badge.fury.io/js/memcache-parser.svg
 
 [npm-url]: https://npmjs.org/package/memcache-parser
 
-[daviddm-image]: https://david-dm.org/jchip/memcache/status.svg?path=packages/memcache-parser
+[daviddm-image]: https://david-dm.org/electrode-io/memcache/status.svg?path=packages/memcache-parser
 
-[daviddm-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-parser
+[daviddm-url]: https://david-dm.org/electrode-io/memcache?path=packages/memcache-parser
 
-[daviddm-dev-image]: https://david-dm.org/jchip/memcache/dev-status.svg?path=packages/memcache-parser
+[daviddm-dev-image]: https://david-dm.org/electrode-io/memcache/dev-status.svg?path=packages/memcache-parser
 
-[daviddm-dev-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-parser
+[daviddm-dev-url]: https://david-dm.org/electrode-io/memcache?path=packages/memcache-parser

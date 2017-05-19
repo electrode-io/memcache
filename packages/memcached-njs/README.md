@@ -9,18 +9,18 @@ A working memcached server implemented in NodeJS for testing.
 
 Apache-2.0 © [Joel Chen](https://github.com/jchip)
 
-[travis-image]: https://travis-ci.org/jchip/memcache.svg?branch=master
+[travis-image]: https://travis-ci.org/electrode-io/memcache.svg?branch=master
 
-[travis-url]: https://travis-ci.org/jchip/memcache
+[travis-url]: https://travis-ci.org/electrode-io/memcache
 
 [npm-image]: https://badge.fury.io/js/memcached-njs.svg
 
 [npm-url]: https://npmjs.org/package/memcached-njs
 
-[daviddm-image]: https://david-dm.org/jchip/memcache/status.svg?path=packages/memcached-njs
+[daviddm-image]: https://david-dm.org/electrode-io/memcache/status.svg?path=packages/memcached-njs
 
-[daviddm-url]: https://david-dm.org/jchip/memcache?path=packages/memcached-njs
+[daviddm-url]: https://david-dm.org/electrode-io/memcache?path=packages/memcached-njs
 
-[daviddm-dev-image]: https://david-dm.org/jchip/memcache/dev-status.svg?path=packages/memcached-njs
+[daviddm-dev-image]: https://david-dm.org/electrode-io/memcache/dev-status.svg?path=packages/memcached-njs
 
-[daviddm-dev-url]: https://david-dm.org/jchip/memcache?path=packages/memcached-njs
+[daviddm-dev-url]: https://david-dm.org/electrode-io/memcache?path=packages/memcached-njs

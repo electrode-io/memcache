@@ -230,25 +230,25 @@ For the `cas` command, `options` must contain a `casUniq` value that you receive
 
 Apache-2.0 © [Joel Chen](https://github.com/jchip)
 
-[travis-image]: https://travis-ci.org/jchip/memcache.svg?branch=master
+[travis-image]: https://travis-ci.org/electrode-io/memcache.svg?branch=master
 
-[travis-url]: https://travis-ci.org/jchip/memcache
+[travis-url]: https://travis-ci.org/electrode-io/memcache
 
 [npm-image]: https://badge.fury.io/js/memcache-client.svg
 
 [npm-url]: https://npmjs.org/package/memcache-client
 
-[daviddm-image]: https://david-dm.org/jchip/memcache/status.svg?path=packages/memcache-client
+[daviddm-image]: https://david-dm.org/electrode-io/memcache/status.svg?path=packages/memcache-client
 
-[daviddm-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-client
+[daviddm-url]: https://david-dm.org/electrode-io/memcache?path=packages/memcache-client
 
-[daviddm-dev-image]: https://david-dm.org/jchip/memcache/dev-status.svg?path=packages/memcache-client
+[daviddm-dev-image]: https://david-dm.org/electrode-io/memcache/dev-status.svg?path=packages/memcache-client
 
-[daviddm-dev-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-client
+[daviddm-dev-url]: https://david-dm.org/electrode-io/memcache?path=packages/memcache-client
 
-[daviddm-opt-image]: https://david-dm.org/jchip/memcache/optional-status.svg?path=packages/memcache-client
+[daviddm-opt-image]: https://david-dm.org/electrode-io/memcache/optional-status.svg?path=packages/memcache-client
 
-[daviddm-opt-url]: https://david-dm.org/jchip/memcache?path=packages/memcache-client
+[daviddm-opt-url]: https://david-dm.org/electrode-io/memcache?path=packages/memcache-client
 
 [node-zstd]: https://github.com/zwb-ict/node-zstd
 
