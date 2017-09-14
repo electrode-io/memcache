@@ -4,7 +4,7 @@
   "description": "A functional memcached implemented in NodeJS for testing",
   "main": "index.js",
   "scripts": {
-    "test": "gulp check"
+    "test": "clap check"
   },
   "repository": {
     "type": "git",
@@ -24,7 +24,28 @@
     "memcache-parser": "^0.2.5"
   },
   "devDependencies": {
-    "electrode-archetype-njs-module-dev": "^2.0.0",
+    "electrode-archetype-njs-module-dev": "^2.3.0",
     "memcached": "^2.2.2"
+  },
+  "nyc": {
+    "all": true,
+    "reporter": [
+      "lcov",
+      "text",
+      "text-summary"
+    ],
+    "exclude": [
+      "coverage",
+      "*clap.js",
+      "gulpfile.js",
+      "dist",
+      "test"
+    ],
+    "check-coverage": true,
+    "statements": 51.6,
+    "branches": 27.7,
+    "functions": 43.7,
+    "lines": 52.8,
+    "cache": true
   }
 }
