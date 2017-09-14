@@ -2,7 +2,7 @@
 
 const Connection = require("../../lib/connection");
 
-describe("connection", function () {
+describe("connection", function() {
   it("waitReady should resolve connect Promise status is CONNECTING", () => {
     const x = new Connection({ socketID: 1 });
     x._connectPromise = "test";
@@ -41,7 +41,7 @@ describe("connection", function () {
     const x = new Connection({ socketID: 1 });
     let testError;
     x.queueCommand({
-      callback: (error) => (testError = error)
+      callback: error => (testError = error)
     });
     x.cmdAction_ERROR(["test", "hello", "world"]);
     expect(testError.message).to.equal("test hello world");
@@ -60,6 +60,20 @@ describe("connection", function () {
     x.receiveResult({
       cmdTokens: ["test", "foo"]
     });
+  });
+
+  it("dequeueCommand should return dummy cmd if it's shutdown", () => {
+    const x = new Connection({}, { socketID: 1, endConnection: () => undefined });
+    x._shutdown("test");
+    expect(x.dequeueCommand().callback()).to.equal(undefined);
+  });
+
+  it("should not handle command action result if it's not ready", () => {
+    const x = new Connection({}, { socketID: 1, endConnection: () => undefined });
+    x.peekCommand = () => {
+      throw new Error("should not call peekCommand");
+    };
+    x.cmdAction_RESULT();
   });
 
   it("should only call socket.end in _shutdown if socket is valid", () => {

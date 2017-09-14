@@ -62,7 +62,7 @@ class MemcacheConnection extends MemcacheParser {
         reject(err);
       }, this.client.options.connectTimeout || defaults.CONNECT_TIMEOUT_MS);
 
-      socket.once("error", (err) => {
+      socket.once("error", err => {
         this._shutdown("connect failed");
         clearTimeout(connTimeout);
         err.connecting = true;
@@ -78,6 +78,8 @@ class MemcacheConnection extends MemcacheParser {
         clearTimeout(connTimeout);
         resolve(this);
       });
+
+      this.socket = socket;
     });
 
     return this._connectPromise;
@@ -161,7 +163,7 @@ class MemcacheConnection extends MemcacheParser {
   }
 
   cmdAction_ERROR(cmdTokens) {
-    const msg = (m) => (m ? ` ${m}` : "");
+    const msg = m => (m ? ` ${m}` : "");
     const error = new Error(`${cmdTokens[0]}${msg(cmdTokens.slice(1).join(" "))}`);
     error.cmdTokens = cmdTokens;
     this.dequeueCommand().callback(error);
@@ -222,6 +224,7 @@ class MemcacheConnection extends MemcacheParser {
     this.node.endConnection(this);
     if (this.socket) {
       this.socket.end();
+      this.socket.destroy();
       this.socket.unref();
     }
     delete this.socket;
@@ -256,7 +259,7 @@ class MemcacheConnection extends MemcacheParser {
       this._shutdown("socket end");
     });
 
-    socket.on("error", (err) => {
+    socket.on("error", err => {
       this._shutdown(`socket error ${err.message}`);
     });
 
