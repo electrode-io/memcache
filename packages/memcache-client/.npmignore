@@ -5,3 +5,4 @@ node_modules
 gulpfile.js
 xclap.js
 .nyc_output
+/test
