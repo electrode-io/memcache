@@ -57,20 +57,24 @@ class MemcacheClient {
 
   // the promise only version of send
   xsend(data, options) {
-    return this._servers.doCmd((c) => this._send(c, data, options || {}));
+    return this._servers.doCmd(c => this._send(c, data, options || {}));
   }
 
   // a convenient method to send a single line as a command to the server
   // with \r\n appended for you automatically
   cmd(data, options, callback) {
-    return this.send((socket) => {
-      socket.write(data);
-      if (options && options.noreply) {
-        socket.write(" noreply\r\n");
-      } else {
-        socket.write("\r\n");
-      }
-    }, options, callback);
+    return this.send(
+      socket => {
+        socket.write(data);
+        if (options && options.noreply) {
+          socket.write(" noreply\r\n");
+        } else {
+          socket.write("\r\n");
+        }
+      },
+      options,
+      callback
+    );
   }
 
   // "set" means "store this data".
@@ -148,7 +152,8 @@ class MemcacheClient {
       options = {};
     }
 
-    const lifetime = options.lifetime !== undefined ? options.lifetime : (this.options.lifetime || 60);
+    const lifetime =
+      options.lifetime !== undefined ? options.lifetime : this.options.lifetime || 60;
     const casUniq = options.casUniq ? ` ${options.casUniq}` : "";
     const noreply = options.noreply ? ` noreply` : "";
 
@@ -156,7 +161,7 @@ class MemcacheClient {
     // store commands
     // <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
     //
-    const _data = (socket) => {
+    const _data = socket => {
       const packed = this._packer.pack(value, options.compress === true);
       const bytes = Buffer.byteLength(packed.data);
       const msg = `${cmd} ${key} ${packed.flag} ${lifetime} ${bytes}${casUniq}${noreply}\r\n`;
@@ -195,7 +200,7 @@ class MemcacheClient {
     //
     return Array.isArray(key)
       ? this.xsend(`${cmd} ${key.join(" ")}\r\n`)
-      : this.xsend(`${cmd} ${key}\r\n`).then(((r) => r[key]));
+      : this.xsend(`${cmd} ${key}\r\n`).then(r => r[key]);
   }
 
   //
@@ -206,28 +211,28 @@ class MemcacheClient {
     const promise = options.noreply
       ? Promise.resolve()
       : new Promise((resolve, reject) => {
-        const context = {
-          error: null,
-          results: {},
-          callback: (err, result) => {
-            if (err) {
-              if (options.ignoreNotStored === true && err.message === "NOT_STORED") {
-                return resolve("ignore NOT_STORED");
+          const context = {
+            error: null,
+            results: {},
+            callback: (err, result) => {
+              if (err) {
+                if (options.ignoreNotStored === true && err.message === "NOT_STORED") {
+                  return resolve("ignore NOT_STORED");
+                }
+                return reject(err);
               }
-              return reject(err);
+              if (result) {
+                return resolve(result);
+              } else if (context.error) {
+                return reject(context.error);
+              } else {
+                return resolve(context.results);
+              }
             }
-            if (result) {
-              return resolve(result);
-            } else if (context.error) {
-              return reject(context.error);
-            } else {
-              return resolve(context.results);
-            }
-          }
-        };
+          };
 
-        conn.queueCommand(context);
-      });
+          conn.queueCommand(context);
+        });
 
     if (typeof data === "function") {
       data(conn.socket);

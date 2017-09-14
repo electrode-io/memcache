@@ -17,7 +17,7 @@ class MemcacheNode {
 
   doCmd(action) {
     // look for idle and ready connection
-    var conn = this.connections.find((c) => {
+    var conn = this.connections.find(c => {
       return c.isReady() && c._cmdQueue.length === 0;
     });
 
@@ -32,7 +32,7 @@ class MemcacheNode {
 
     // look for least busy connection
     var n = Infinity;
-    this.connections.forEach((c) => {
+    this.connections.forEach(c => {
       if (c._cmdQueue.length < n) {
         conn = c;
         n = c._cmdQueue.length;
@@ -49,11 +49,11 @@ class MemcacheNode {
   shutdown() {
     const connections = this.connections;
     this.connections = [];
-    connections.forEach((x) => x.shutdown());
+    connections.forEach(x => x.shutdown());
   }
 
   endConnection(conn) {
-    this.connections = this.connections.filter((x) => x._id !== conn._id);
+    this.connections = this.connections.filter(x => x._id !== conn._id);
   }
 
   _connect(server) {

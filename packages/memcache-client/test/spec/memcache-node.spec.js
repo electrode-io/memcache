@@ -7,7 +7,7 @@ const expect = chai.expect;
 const Promise = require("bluebird");
 const MemcacheNode = require("../../lib/memcache-node");
 
-describe("memcache node", function () {
+describe("memcache node", function() {
   it("should use established connection", () => {
     const node = new MemcacheNode({}, { server: "test", maxConnections: 1 });
     node.connections.push({
@@ -15,7 +15,7 @@ describe("memcache node", function () {
       isReady: () => true,
       _cmdQueue: []
     });
-    node.doCmd((c) => expect(c.test).to.equal("test"));
+    node.doCmd(c => expect(c.test).to.equal("test"));
   });
 
   it("should make a new connection when no idle ones", () => {
@@ -26,13 +26,12 @@ describe("memcache node", function () {
       _cmdQueue: [{}]
     });
     let testServer;
-    node._connect = (server) => {
+    node._connect = server => {
       testServer = server;
       return Promise.resolve("dummy-connection");
     };
-    node.doCmd((c) => expect(c).to.equal("dummy-connection"));
+    node.doCmd(c => expect(c).to.equal("dummy-connection"));
   });
-
 
   it("should make a new connection when no ready ones", () => {
     const node = new MemcacheNode({}, { server: "test", maxConnections: 2 });
@@ -42,11 +41,11 @@ describe("memcache node", function () {
       _cmdQueue: []
     });
     let testServer;
-    node._connect = (server) => {
+    node._connect = server => {
       testServer = server;
       return Promise.resolve("dummy-connection");
     };
-    node.doCmd((c) => expect(c).to.equal("dummy-connection"));
+    node.doCmd(c => expect(c).to.equal("dummy-connection"));
   });
 
   it("should reuse the least busy connection", () => {
@@ -66,7 +65,7 @@ describe("memcache node", function () {
       isReady: () => true,
       _cmdQueue: [{}, {}]
     });
-    node.doCmd((c) => expect(c.test).to.equal("test2"));
+    node.doCmd(c => expect(c.test).to.equal("test2"));
   });
 
   it("should wait if the least busy connection is still pending", () => {
@@ -87,17 +86,13 @@ describe("memcache node", function () {
       isReady: () => true,
       _cmdQueue: [{}, {}]
     });
-    node.doCmd((c) => expect(c).to.equal("dummy-connection"));
+    node.doCmd(c => expect(c).to.equal("dummy-connection"));
   });
 
   it("should remove connection that's ended", () => {
     const node = new MemcacheNode({}, { server: "test", maxConnections: 5 });
-    node.connections = [
-      { _id: 1 }, { _id: 10 }, { _id: 20 }, { _id: 30 }, { _id: 40 }
-    ];
+    node.connections = [{ _id: 1 }, { _id: 10 }, { _id: 20 }, { _id: 30 }, { _id: 40 }];
     node.endConnection({ _id: 30 });
-    expect(node.connections).to.deep.equal([
-      { _id: 1 }, { _id: 10 }, { _id: 20 }, { _id: 40 }
-    ]);
+    expect(node.connections).to.deep.equal([{ _id: 1 }, { _id: 10 }, { _id: 20 }, { _id: 40 }]);
   });
 });

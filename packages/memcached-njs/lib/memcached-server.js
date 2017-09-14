@@ -23,10 +23,10 @@ const replies = {
 };
 
 const logger = {
-  debug: (msg) => console.log(msg),
-  info: (msg) => console.log(msg),
-  warn: (msg) => console.log(msg),
-  error: (msg) => console.log(msg)
+  debug: msg => console.log(msg),
+  info: msg => console.log(msg),
+  warn: msg => console.log(msg),
+  error: msg => console.log(msg)
 };
 
 class Connection extends MemcacheParser {
@@ -39,7 +39,7 @@ class Connection extends MemcacheParser {
     this._dataQueue = [];
     this._isPaused = false;
 
-    socket.on("data", (data) => {
+    socket.on("data", data => {
       if (this._isPaused) {
         this.logger.info("server paused, queueing data");
         this._dataQueue.unshift(data);
@@ -115,7 +115,7 @@ class MemcacheServer {
     server.on("connection", this.newConnection.bind(this));
     this._server = server;
     return new Promise((resolve, reject) => {
-      server.once("error", (err) => {
+      server.once("error", err => {
         server.close();
         reject(err);
       });
@@ -134,12 +134,12 @@ class MemcacheServer {
   // instead queue them up for later
   pause() {
     this._isPaused = true;
-    this._clients.forEach((x) => x.connection.pause());
+    this._clients.forEach(x => x.connection.pause());
   }
 
   unpause() {
     this._isPaused = false;
-    this._clients.forEach((x) => x.connection.unpause());
+    this._clients.forEach(x => x.connection.unpause());
   }
 
   asyncMode(flag) {
@@ -399,7 +399,7 @@ class MemcacheServer {
 
   cmd_get(cmdTokens, connection) {
     const cache = this._cache;
-    const _get = (key) => {
+    const _get = key => {
       if (cache.has(key)) {
         const e = cache.get(key);
         const casId = cmdTokens[0] === "gets" ? ` ${e.casId}` : "";
@@ -489,15 +489,20 @@ class MemcacheServer {
           e.data = Buffer.from(x.toString());
           this._reply(connection, cmdTokens, e.data);
         } else {
-          this._reply(connection, cmdTokens,
-            `${replies.CLIENT_ERROR} cannot increment or decrement non-numeric value`);
+          this._reply(
+            connection,
+            cmdTokens,
+            `${replies.CLIENT_ERROR} cannot increment or decrement non-numeric value`
+          );
         }
       } else {
-        this._reply(connection, cmdTokens,
-          `${replies.CLIENT_ERROR} invalid numeric delta argument`);
+        this._reply(
+          connection,
+          cmdTokens,
+          `${replies.CLIENT_ERROR} invalid numeric delta argument`
+        );
       }
     }
-
   }
 
   cmd_incr(cmdTokens, connection) {
@@ -564,9 +569,7 @@ class MemcacheServer {
 
   // - "SAME [message]" must specify different source/dest ids.
 
-  _slabs_reassign(cmdTokens, connection) {
-
-  }
+  _slabs_reassign(cmdTokens, connection) {}
 
   // Slabs Automove
   // --------------
@@ -586,17 +589,13 @@ class MemcacheServer {
   //   there is an eviction. It is not recommended to run for very long in this
   //   mode unless your access patterns are very well understood.
 
-  _slabs_automove(cmdTokens, connection) {
-
-  }
+  _slabs_automove(cmdTokens, connection) {}
 
   cmd_slabs(cmdTokens, connection) {
     const x = this[`_slabs_${cmdTokens[1]}`];
     if (x) return x.call(this, cmdTokens, connection);
     return undefined;
-
   }
-
 
   // LRU Tuning
   // ----------
@@ -623,9 +622,7 @@ class MemcacheServer {
   // - "OK" to indicate a successful update of the settings.
 
   // - "ERROR [message]" to indicate a failure or improper arguments.
-  cmd_lru(cmdTokens, connection) {
-
-  }
+  cmd_lru(cmdTokens, connection) {}
 
   // LRU_Crawler
   // -----------
@@ -639,13 +636,9 @@ class MemcacheServer {
 
   // - "ERROR [message]" something went wrong while enabling or disabling.
 
-  _lru_crawler_enable(cmdTokens, connection) {
+  _lru_crawler_enable(cmdTokens, connection) {}
 
-  }
-
-  _lru_crawler_disable(cmdTokens, connection) {
-
-  }
+  _lru_crawler_disable(cmdTokens, connection) {}
 
   // lru_crawler sleep <microseconds>
 
@@ -659,9 +652,7 @@ class MemcacheServer {
 
   // - "CLIENT_ERROR [message]" indicating a format or bounds issue.
 
-  _lru_crawler_sleep(cmdTokens, connection) {
-
-  }
+  _lru_crawler_sleep(cmdTokens, connection) {}
 
   // lru_crawler tocrawl <32u>
 
@@ -675,9 +666,7 @@ class MemcacheServer {
 
   // - "CLIENT_ERROR [message]" indicating a format or bound issue.
 
-  _lru_crawler_tocrawl(cmdTokens, connection) {
-
-  }
+  _lru_crawler_tocrawl(cmdTokens, connection) {}
 
   // lru_crawler crawl <classid,classid,classid|all>
 
@@ -697,9 +686,7 @@ class MemcacheServer {
 
   // - "BADCLASS [message]" to indicate an invalid class was specified.
 
-  _lru_crawler_crawl(cmdTokens, connection) {
-
-  }
+  _lru_crawler_crawl(cmdTokens, connection) {}
 
   // lru_crawler metadump <classid,classid,classid|all>
 
@@ -724,9 +711,7 @@ class MemcacheServer {
 
   // - "BADCLASS [message]" to indicate an invalid class was specified.
 
-  _lru_crawler_metadump(cmdTokens, connection) {
-
-  }
+  _lru_crawler_metadump(cmdTokens, connection) {}
 
   cmd_lru_crawler(cmdTokens, connection) {
     const x = this[`_lru_crawler_${cmdTokens[1]}`];
@@ -771,8 +756,7 @@ class MemcacheServer {
   //   cache. Useful in seeing if items being evicted were actually used, and which
   //   keys are getting removed.
 
-  cmd_watch(cmdTokens, connection) {
-  }
+  cmd_watch(cmdTokens, connection) {}
 
   // Statistics
   // ----------
@@ -802,12 +786,15 @@ class MemcacheServer {
   // END\r\n
 
   cmd_stats(cmdTokens, connection) {
-    connection.send([
-      "STAT foo bar",
-      "STAT hello world",
-      `STAT connection ${connection._id}`,
-      `STAT port ${this._port}`,
-      "END"].join("\r\n"));
+    connection.send(
+      [
+        "STAT foo bar",
+        "STAT hello world",
+        `STAT connection ${connection._id}`,
+        `STAT port ${this._port}`,
+        "END"
+      ].join("\r\n")
+    );
     connection.send("\r\n");
   }
 
@@ -844,9 +831,7 @@ class MemcacheServer {
   // the limit is lower, and slabs_reassign+automove are enabled, free memory may
   // be released back to the OS asynchronously.
 
-  cmd_flush_all(cmdTokens, connection) {
-
-  }
+  cmd_flush_all(cmdTokens, connection) {}
 
   // "version" is a command with no arguments:
 
@@ -887,7 +872,7 @@ class MemcacheServer {
   }
 
   shutdown() {
-    this._clients.forEach((x) => {
+    this._clients.forEach(x => {
       x.connection.close();
     });
     this._clients.clear();

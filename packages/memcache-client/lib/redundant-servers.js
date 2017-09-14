@@ -56,7 +56,7 @@ class RedundantServers {
       return this._getNode().doCmd(action);
     }
     const node = this._getNode();
-    return node.doCmd(action).catch((err) => {
+    return node.doCmd(action).catch(err => {
       if (!err.connecting) {
         throw err;
       }
@@ -93,14 +93,12 @@ class RedundantServers {
       }
     }
     if (n > 0) {
-      this._exServers = this._exServers.filter((x) => x.exiledTime !== undefined);
+      this._exServers = this._exServers.filter(x => x.exiledTime !== undefined);
     }
   }
 
   _getNode() {
-    const n = this._servers.length > 1
-      ? Math.floor(Math.random() * this._servers.length)
-      : 0;
+    const n = this._servers.length > 1 ? Math.floor(Math.random() * this._servers.length) : 0;
     const server = this._servers[n];
     let node = this._nodes[server.server];
     if (node) {

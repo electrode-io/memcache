@@ -5,7 +5,7 @@ const assert = require("assert");
 /* eslint-disable no-magic-numbers, max-statements,no-var */
 /* eslint max-len:[2,120] */
 
-const log = (msg) => console.log(msg); // eslint-disable-line
+const log = msg => console.log(msg); // eslint-disable-line
 
 const defaultLogger = {
   error: log,
@@ -57,8 +57,10 @@ class MemcacheParser {
   }
 
   malformDataStream(pending, data) {
-    this.logger.error(`MemcacheParser: malformed memcache data stream, cmd: ${pending.cmd}` +
-      ` remaining data length: ${data.length}`);
+    this.logger.error(
+      `MemcacheParser: malformed memcache data stream, cmd: ${pending.cmd}` +
+        ` remaining data length: ${data.length}`
+    );
   }
 
   malformCommand(cmdTokens) {
@@ -81,10 +83,13 @@ class MemcacheParser {
     if (brkIdx >= 0) {
       this._cmdBrkLookupOffset = 0;
 
-      const cmdTokens = data.slice(0, brkIdx).toString().split(" ");
-      data = data.length === brkIdx + 2
-        ? undefined
-        : data.slice(brkIdx + 2); // advance buffer to skip comand line + \r\n
+      const cmdTokens = data
+        .slice(0, brkIdx)
+        .toString()
+        .split(" ");
+
+      // advance buffer to skip comand line + \r\n
+      data = data.length === brkIdx + 2 ? undefined : data.slice(brkIdx + 2);
 
       this.logger.debug(`MemcacheParser: got cmd, tokens: ${cmdTokens}`);
       if (cmdTokens.length < 1 || cmdTokens[0].length < 1) {
@@ -96,7 +101,9 @@ class MemcacheParser {
         data = this._copyPending(data);
       }
     } else {
-      this.logger.debug(`MemcacheParser: _parseCmd no linebreak, storing data for later, length: ${data.length}`);
+      this.logger.debug(
+        `MemcacheParser: _parseCmd no linebreak, storing data for later, length: ${data.length}`
+      );
       this._partialData = data;
       this._cmdBrkLookupOffset = data.length - 1;
       data = undefined;
@@ -124,7 +131,8 @@ class MemcacheParser {
 
     // look for \r\n after the data
     if (pending.filled === pending.data.length && data.length - consumed >= 2) {
-      if (data[consumed] !== 13 || data[consumed + 1] !== 10) { // CR and LF?
+      if (data[consumed] !== 13 || data[consumed + 1] !== 10) {
+        // CR and LF?
         this.malformDataStream(pending, data, consumed);
         consumed = data.length;
       } else {
@@ -148,13 +156,17 @@ class MemcacheParser {
       // we don't expect command line to be longer than that.
       //
       if (this._pending === undefined && partial.length > 512 && newLength > 2000) {
-        this.logger.warn(`MemcacheParser: partial data length ${partial.length} ` +
-          `and new data length ${newLength} too big, resetting`);
+        this.logger.warn(
+          `MemcacheParser: partial data length ${partial.length} ` +
+            `and new data length ${newLength} too big, resetting`
+        );
         return undefined;
       }
 
-      this.logger.debug(`MemcacheParser: concat partial data, length: ` +
-        `${partial.length}, new length ${newLength} pending ${this._pending}`);
+      this.logger.debug(
+        `MemcacheParser: concat partial data, length: ` +
+          `${partial.length}, new length ${newLength} pending ${this._pending}`
+      );
       data = Buffer.concat([partial, data], newLength);
     }
 
