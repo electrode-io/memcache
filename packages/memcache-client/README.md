@@ -170,16 +170,15 @@ module.exports = {
 #### `connectTimeout`
 
 Note that the `connectTimeout` option is a custom timeout this client adds.  It will preempt
-the system's connect timeout, for which you typically get backa `connect ETIMEDOUT` error.
+the system's connect timeout, for which you typically get back a `connect ETIMEDOUT` error.
 
-Since there's no way to change the system's connect timeout from NodeJS, which is usually
+Since from NodeJS there's no way to change the system's connect timeout, which is usually
 fairly long, this option allows you to set a shorter timeout.  When it triggers, the client
-will shutdown the connection and destroy the socket, and reject with an error.  The error's
+will shutdown the connection and destroys the socket, and rejects with an error.  The error's
 message will be `"connect timeout"` and has the field `connecting` set to true.
 
 If you want to let the system connect timeout to take place, then set this option to 0 to 
-completely disable custom timeout, or set it to a high value like 10 minutes in milliseconds 
-(60000).
+completely disable it, or set it to a high value like 10 minutes in milliseconds (60000).
 
 #### Dangle Socket
 

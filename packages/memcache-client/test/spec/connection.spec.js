@@ -68,7 +68,7 @@ describe("connection", function() {
     expect(x.dequeueCommand().callback()).to.equal(undefined);
   });
 
-  it("waitDangleSocket should do nothing if socket if falsy", () => {
+  it("waitDangleSocket should do nothing if socket is falsy", () => {
     const x = new Connection({}, { socketID: 1, endConnection: () => undefined });
     x.client = {
       emit: () => {
