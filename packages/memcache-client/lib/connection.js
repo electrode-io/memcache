@@ -41,6 +41,26 @@ class MemcacheConnection extends MemcacheParser {
     this._status = Status.INIT;
   }
 
+  waitDangleSocket(socket) {
+    if (!socket) return;
+
+    const client = this.client;
+    client.emit("dangle-wait", { type: "wait", socket });
+
+    const dangleWaitTimeout = setTimeout(() => {
+      socket.removeAllListeners("error");
+      socket.removeAllListeners("connect");
+      socket.destroy();
+      client.emit("dangle-wait", { type: "timeout" });
+    }, client.options.dangleSocketWaitTimeout || defaults.DANGLE_SOCKET_WAIT_TIMEOUT);
+
+    socket.once("error", err => {
+      clearTimeout(dangleWaitTimeout);
+      socket.destroy();
+      client.emit("dangle-wait", { type: "error", err });
+    });
+  }
+
   connect(server) {
     server = server.split(":");
     const host = server[0];
@@ -53,14 +73,32 @@ class MemcacheConnection extends MemcacheParser {
     this._connectPromise = new Promise((resolve, reject) => {
       this._status = Status.CONNECTING;
 
-      const connTimeout = setTimeout(() => {
-        socket.removeAllListeners("error");
-        socket.removeAllListeners("connect");
-        this._shutdown("connect timeout");
-        const err = new Error("connect timeout");
-        err.connecting = true;
-        reject(err);
-      }, this.client.options.connectTimeout || defaults.CONNECT_TIMEOUT_MS);
+      const selfTimeout = () => {
+        if (!(this.client.options.connectTimeout > 0)) return undefined;
+
+        return setTimeout(() => {
+          socket.removeAllListeners("error");
+          socket.removeAllListeners("connect");
+
+          this.client.emit("timeout", {
+            socket,
+            keepDangleSocket: this.client.options.keepDangleSocket
+          });
+
+          if (this.client.options.keepDangleSocket) {
+            this.waitDangleSocket(socket);
+            this._shutdown("connect timeout", true);
+          } else {
+            this._shutdown("connect timeout");
+          }
+
+          const err = new Error("connect timeout");
+          err.connecting = true;
+          reject(err);
+        }, this.client.options.connectTimeout);
+      };
+
+      const connTimeout = selfTimeout();
 
       socket.once("error", err => {
         this._shutdown("connect failed");
@@ -210,7 +248,7 @@ class MemcacheConnection extends MemcacheParser {
     this.dequeueCommand().callback();
   }
 
-  _shutdown(msg) {
+  _shutdown(msg, keepSocket) {
     if (this.isShutdown()) {
       return;
     }
@@ -224,7 +262,7 @@ class MemcacheConnection extends MemcacheParser {
     this.node.endConnection(this);
     if (this.socket) {
       this.socket.end();
-      this.socket.destroy();
+      if (!keepSocket) this.socket.destroy();
       this.socket.unref();
     }
     delete this.socket;

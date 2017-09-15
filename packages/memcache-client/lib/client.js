@@ -9,12 +9,14 @@ const ValuePacker = require("./value-packer");
 const nullLogger = require("./null-logger");
 const defaults = require("./defaults");
 const RedundantServers = require("./redundant-servers");
+const EventEmitter = require("events");
 
 /* eslint-disable no-bitwise,no-magic-numbers,max-params,max-statements,no-var */
 /* eslint max-len:[2,120] */
 
-class MemcacheClient {
+class MemcacheClient extends EventEmitter {
   constructor(options) {
+    super();
     assert(options.server, "Must provide options.server");
     this.options = options;
     this.socketID = 1;

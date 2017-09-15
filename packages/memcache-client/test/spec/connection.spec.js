@@ -68,6 +68,16 @@ describe("connection", function() {
     expect(x.dequeueCommand().callback()).to.equal(undefined);
   });
 
+  it("waitDangleSocket should do nothing if socket if falsy", () => {
+    const x = new Connection({}, { socketID: 1, endConnection: () => undefined });
+    x.client = {
+      emit: () => {
+        throw new Error("not expect call from waitDangleSocket");
+      }
+    };
+    x.waitDangleSocket();
+  });
+
   it("should not handle command action result if it's not ready", () => {
     const x = new Connection({}, { socketID: 1, endConnection: () => undefined });
     x.peekCommand = () => {

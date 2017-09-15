@@ -145,11 +145,13 @@ const client = new MemcacheClient(options);
 > Default `maxConnections` is `1`
 
 -   `ignoreNotStored` - **_optional_** If set to true, then will not treat `NOT_STORED` reply from any store commands as error.  Use this for [Mcrouter AllAsyncRoute] mode.
--   `lifetime` - **_optional_** Your cache TTL in **_seconds_** to use for all entries.  Default is 60 seconds.
--   `cmdTimeout` - **_optional_** Command timeout in milliseconds.  Default is 5000 ms.
+-   `lifetime` - **_optional_** Your cache TTL in **_seconds_** to use for all entries.  DEFAULT: 60 seconds.
+-   `cmdTimeout` - **_optional_** Command timeout in milliseconds.  DEFAULT: 5000 ms.
     -   If a command didn't receive response before this timeout value, then it will cause the connection to shutdown and returns Error.
--   `connectTimeout` - **_optional_** Connect to server timeout in milliseconds. Default is 5000 ms.
+-   `connectTimeout` - **_optional_** Custom self connect to server timeout in milliseconds.  It's disabled if set to 0.  DEFAULT: 0
     -   The error object from this will have `connecting` set to `true`
+-   `keepDangleSocket` - **_optional_** After `connectTimeout` trigger, do not destroy the socket but keep listening for errors on it.  DEFAULT: false
+-   `dangleSocketWaitTimeout` - **_optional_** How long to wait for errors on dangle socket before destroying it.  DEFAULT: 5 minutes (30000 milliseconds)
 -   `compressor` - **_optional_** a custom compressor for compressing the data.  By default [node-zstd] is used.
     -   It should provide two methods that take `Buffer` value, and return result as `Buffer`.
         -   `compressSync(value)` 
@@ -175,8 +177,31 @@ fairly long, this option allows you to set a shorter timeout.  When it triggers,
 will shutdown the connection and destroy the socket, and reject with an error.  The error's
 message will be `"connect timeout"` and has the field `connecting` set to true.
 
-If you want to let the system connect timeout to take place, then set this option to a high
-value like 10 minutes in milliseconds (60000).
+If you want to let the system connect timeout to take place, then set this option to 0 to 
+completely disable custom timeout, or set it to a high value like 10 minutes in milliseconds 
+(60000).
+
+#### Dangle Socket
+
+If you set a small custom `connectTimeout` and do not want to destroy the socket after it 
+triggers, then you will end up with a dangling socket.
+
+To enable keeping the dangling socket, set the option `keepDangleSocket` to `true`.
+
+The client will automatically add a new error handler for the socket in case the system's
+`ETIMEDOUT` eventually comes back.  The client also sets a timeout to eventually destroy the
+socket in case the system never comes back with anything.
+
+To control the dangling wait timeout, use the option `dangleSocketWaitTimeout`.  It's default 
+to 5 minutes.
+
+The client will emit the event `dangle-wait` with the following data:
+
+-   Start waiting: `{ type: "wait", socket }`
+-   Wait timeout: `{ type: "timeout" }`
+-   error received: `{ type: "error", err }`
+
+> Generally it's better to just destroy the socket instead of leaving it dangling.
 
 #### Multiple redundant servers support
 

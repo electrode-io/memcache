@@ -20,6 +20,7 @@ describe("memcache client", function() {
   let memcachedServer;
   let server;
   let serverPort;
+  let sysConnectTimeout = 0;
 
   const text1 = text.text1;
   const text2 = text.text2;
@@ -88,6 +89,85 @@ describe("memcache client", function() {
       .cmd("stats")
       .catch(err => (testError = err))
       .then(() => expect(testError.message).includes("connect timeout"));
+  });
+
+  it("should keep dangle socket and wait for system ETIMEDOUT error", () => {
+    console.log("testing wait system connect ETIMEDOUT - will take a loooong time");
+    const x = new MemcacheClient({
+      server: "192.168.255.1:8181",
+      connectTimeout: 50,
+      keepDangleSocket: true
+    });
+
+    let testError;
+    const start = Date.now();
+    return x
+      .cmd("stats")
+      .catch(err => (testError = err))
+      .then(() => {
+        expect(testError.message).includes("connect timeout");
+      })
+      .then(() => {
+        return new Promise(resolve => {
+          x.on("dangle-wait", data => {
+            expect(data.err).to.be.an.Error;
+            expect(data.err.message).includes("connect ETIMEDOUT");
+            sysConnectTimeout = Date.now() - start;
+            resolve();
+          });
+        });
+      });
+  }).timeout(10 * 60 * 1000);
+
+  it("should not get system ETIMEDOUT error after custom connect timeout", () => {
+    console.log(
+      "testing no system connect ETIMEDOUT after custom connect timeout - will take a loooong time"
+    );
+    // make sure system connect timeout has been detected
+    expect(sysConnectTimeout).to.be.above(0);
+    const x = new MemcacheClient({
+      server: "192.168.255.1:8181",
+      connectTimeout: 50
+    });
+
+    let testError;
+    const start = Date.now();
+    return x
+      .cmd("stats")
+      .catch(err => (testError = err))
+      .then(() => {
+        expect(testError.message).includes("connect timeout");
+      })
+      .then(() => {
+        // wait detected system connect timeout plus 10 seconds
+        return Promise.delay(sysConnectTimeout + 10000);
+      });
+  }).timeout(10 * 60 * 1000);
+
+  it("should timeout dangle wait", () => {
+    const x = new MemcacheClient({
+      server: "192.168.255.1:8181",
+      connectTimeout: 50,
+      keepDangleSocket: true,
+      dangleSocketWaitTimeout: 100
+    });
+
+    let testError;
+    const start = Date.now();
+    return x
+      .cmd("stats")
+      .catch(err => (testError = err))
+      .then(() => {
+        expect(testError.message).includes("connect timeout");
+      })
+      .then(() => {
+        return new Promise(resolve =>
+          x.on("dangle-wait", data => {
+            expect(data.type).to.equal("timeout");
+            resolve();
+          })
+        );
+      });
   });
 
   it("should take a custom logger if it's not undefined", () => {
