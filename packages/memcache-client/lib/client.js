@@ -208,39 +208,42 @@ class MemcacheClient {
   //
 
   _send(conn, data, options) {
-    const promise = options.noreply
-      ? Promise.resolve()
-      : new Promise((resolve, reject) => {
-          const context = {
-            error: null,
-            results: {},
-            callback: (err, result) => {
-              if (err) {
-                if (options.ignoreNotStored === true && err.message === "NOT_STORED") {
-                  return resolve("ignore NOT_STORED");
-                }
-                return reject(err);
+    return Promise.try(() => {
+      // send data to connection
+      if (typeof data === "function") {
+        data(conn.socket);
+      } else {
+        conn.socket.write(data);
+      }
+
+      // if no reply wanted then just return
+      if (options.noreply) return undefined;
+
+      // queue up context to listen for reply
+      return new Promise((resolve, reject) => {
+        const context = {
+          error: null,
+          results: {},
+          callback: (err, result) => {
+            if (err) {
+              if (options.ignoreNotStored === true && err.message === "NOT_STORED") {
+                return resolve("ignore NOT_STORED");
               }
-              if (result) {
-                return resolve(result);
-              } else if (context.error) {
-                return reject(context.error);
-              } else {
-                return resolve(context.results);
-              }
+              return reject(err);
             }
-          };
+            if (result) {
+              return resolve(result);
+            } else if (context.error) {
+              return reject(context.error);
+            } else {
+              return resolve(context.results);
+            }
+          }
+        };
 
-          conn.queueCommand(context);
-        });
-
-    if (typeof data === "function") {
-      data(conn.socket);
-    } else {
-      conn.socket.write(data);
-    }
-
-    return promise;
+        conn.queueCommand(context);
+      });
+    });
   }
 
   // internal send that expects all params passed (even if they are undefined)

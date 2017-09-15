@@ -303,6 +303,7 @@ describe("memcache client", function() {
   });
 
   it("should handle two thousand bad servers", () => {
+    console.log("testing 2000 bad servers - will take a long time");
     const servers = [];
     let port = 30000;
     while (servers.length < 2000) {
