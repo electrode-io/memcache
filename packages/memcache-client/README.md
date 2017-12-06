@@ -152,10 +152,7 @@ const client = new MemcacheClient(options);
     -   The error object from this will have `connecting` set to `true`
 -   `keepDangleSocket` - **_optional_** After `connectTimeout` trigger, do not destroy the socket but keep listening for errors on it.  DEFAULT: false
 -   `dangleSocketWaitTimeout` - **_optional_** How long to wait for errors on dangle socket before destroying it.  DEFAULT: 5 minutes (30000 milliseconds)
--   `compressor` - **_optional_** a custom compressor for compressing the data.  By default [node-zstd] is used.
-    -   It should provide two methods that take `Buffer` value, and return result as `Buffer`.
-        -   `compressSync(value)` 
-        -   `decompressSync(value)`
+-   `compressor` - **_optional_** a custom compressor for compressing the data.  See [data compression](#data-compression) for more details.
 -   `logger` - **_optional_** Custom logger like this:
 
 ```js
@@ -233,6 +230,28 @@ You can also pass in `server.config` with the following options:
 -   `retryFailedServerInterval` - (ms) how often to check failed servers.  Default 10000 ms (10 secs)
 -   `failedServerOutTime` - (ms) how long a failed server should be out before retrying it.  Default 60000 ms (1 min).
 -   `keepLastServer` - (boolean) Keep at least one server even if it failed connection.  Default `true`.
+
+### Data Compression
+
+The client supports automatic compression/decompression of the data you set.  It's turned off by default.
+
+To enable this, you need to:
+
+-  Provide a compressor
+-  Set the `compress` flag when calling the [store commands](#lifetime-and-compress)
+
+#### Compressor
+
+By default, the client is modeled to use [node-zstd] version 2's APIs, specifically, it requires a compressor with these two methods:
+
+-   `compressSync(value)`
+-   `decompressSync(value)`
+
+Both must take and return `Buffer` data.
+
+If you just add [node-zstd] version 2 to your dependencies, then you can start setting the `compress` flag when calling the [store commands](#lifetime-and-compress) to enable compression.
+
+**If you want to use another major version of [node-zstd] or another compressor that doesn't offer the two APIs expected above, then you need to create a wrapper compressor and pass it to the client constructor.**
 
 ### Command Options
 
