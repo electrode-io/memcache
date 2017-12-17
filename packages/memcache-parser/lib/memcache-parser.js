@@ -80,15 +80,27 @@ class MemcacheParser {
 
     const brkIdx = data.indexOf(crlfBuf, this._cmdBrkLookupOffset);
 
+    //
+    // Was a \r\n marker found
+    //
     if (brkIdx >= 0) {
       this._cmdBrkLookupOffset = 0;
 
+      //
+      // Slice just the command part up to the \r\n marker and split it into
+      // tokens separated by space
+      //
       const cmdTokens = data
         .slice(0, brkIdx)
         .toString()
         .split(" ");
 
+      //
       // advance buffer to skip comand line + \r\n
+      // 1. If data contains enough to exactly hold the command and the \r\n marker,
+      //    then just set it to undefined.
+      // 2. Otherwise slice it to right after the \r\n marker.
+      //
       data = data.length === brkIdx + 2 ? undefined : data.slice(brkIdx + 2);
 
       this.logger.debug(`MemcacheParser: got cmd, tokens: ${cmdTokens}`);
@@ -101,10 +113,14 @@ class MemcacheParser {
         data = this._copyPending(data);
       }
     } else {
+      // \r\n marker not found.
       this.logger.debug(
         `MemcacheParser: _parseCmd no linebreak, storing data for later, length: ${data.length}`
       );
+      // 1. We need more data until we see \r\n so save what we have now as partial
       this._partialData = data;
+      // 2. In case the data ends at just \r, when we get more data, we should
+      //    start looking for \r\n one byte back.
       this._cmdBrkLookupOffset = data.length - 1;
       data = undefined;
     }
@@ -124,28 +140,53 @@ class MemcacheParser {
     var consumed = 0;
     const pending = this._pending;
 
+    //
+    // pending still needs more data to fill up.
+    //
     if (pending.filled < pending.data.length) {
+      //
+      // - Copy from data starting at index 0, into pending data, start at where
+      //   it's currently filled up to.
+      // - If data has more than enough to fill up pending, then the copy will
+      //   stop when pending is filled up and return the size consumed from data.
+      //
       consumed = data.copy(pending.data, pending.filled, 0);
       pending.filled += consumed;
     }
 
-    // look for \r\n after the data
-    if (pending.filled === pending.data.length && data.length - consumed >= 2) {
-      if (data[consumed] !== 13 || data[consumed + 1] !== 10) {
-        // CR and LF?
-        this.malformDataStream(pending, data, consumed);
-        consumed = data.length;
-      } else {
-        consumed += 2; // skip \r\n
-        this._pending = undefined;
-        this.receiveResult(pending);
+    //
+    // Was there enough data to fill up pending?
+    //
+    if (pending.filled === pending.data.length) {
+      const remaining = data.length - consumed;
+
+      // Are there still enough leftover in data to hold the \r\n end mark?
+      if (remaining >= 2) {
+        // Look for \r\n after the data
+        if (data[consumed] !== 13 || data[consumed + 1] !== 10) {
+          //
+          // We got all the data but it's not followed by CR and LF?
+          //
+          this.malformDataStream(pending, data, consumed);
+          consumed = data.length;
+        } else {
+          consumed += 2; // skip \r\n
+          this._pending = undefined;
+          this.receiveResult(pending);
+        }
+        return data.length > consumed ? data.slice(consumed) : undefined;
+      } else if (remaining > 0) {
+        // Woo, exactly 1 byte left!
+        // Need to save what's left into partial data for next round
+        this._partialData = data.slice(consumed);
       }
     }
 
-    return data.length > consumed ? data.slice(consumed) : undefined;
+    return undefined;
   }
 
   _checkPartialData(data) {
+    // was there data that didn't have the \r\n marker?
     if (this._partialData !== undefined) {
       const partial = this._partialData;
       this._partialData = undefined;
@@ -167,6 +208,7 @@ class MemcacheParser {
         `MemcacheParser: concat partial data, length: ` +
           `${partial.length}, new length ${newLength} pending ${this._pending}`
       );
+      // Join previous partial and new data into a single bigger data
       data = Buffer.concat([partial, data], newLength);
     }
 
