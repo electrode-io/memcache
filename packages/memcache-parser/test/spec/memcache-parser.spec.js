@@ -8,7 +8,7 @@ const nullLogger = require("../null-logger");
 
 /* eslint-disable no-return-assign */
 
-describe("memcache-parser", function () {
+describe("memcache-parser", function() {
   it("should have defaultLogger", () => {
     const x = new MemcacheParser();
     expect(x.logger).to.be.ok;
@@ -31,7 +31,7 @@ describe("memcache-parser", function () {
   it("should have default malformDataStream", () => {
     let errorMsg;
     const logger = {
-      error: (msg) => errorMsg = msg
+      error: msg => (errorMsg = msg)
     };
     new MemcacheParser(logger).malformDataStream({ cmd: "test" }, "12345");
     expect(errorMsg).includes("malformed memcache data stream, cmd: test");
@@ -40,7 +40,7 @@ describe("memcache-parser", function () {
   it("should have default malformDataStream", () => {
     let errorMsg;
     const logger = {
-      error: (msg) => errorMsg = msg
+      error: msg => (errorMsg = msg)
     };
     new MemcacheParser(logger).malformDataStream({ cmd: "test" }, "12345");
     expect(errorMsg).includes("malformed memcache data stream, cmd: test");
@@ -49,7 +49,7 @@ describe("memcache-parser", function () {
   it("should have default malformCommand", () => {
     let errorMsg;
     const logger = {
-      error: (msg) => errorMsg = msg
+      error: msg => (errorMsg = msg)
     };
     new MemcacheParser(logger).malformCommand();
     expect(errorMsg).includes("malformed command");
@@ -58,7 +58,7 @@ describe("memcache-parser", function () {
   it("should have default unknownCmd", () => {
     let errorMsg;
     const logger = {
-      error: (msg) => errorMsg = msg
+      error: msg => (errorMsg = msg)
     };
     new MemcacheParser(logger).unknownCmd(["test"]);
     expect(errorMsg).includes("unknown command: test");
@@ -89,7 +89,7 @@ describe("memcache-parser", function () {
   it("should process command", () => {
     const parser = new MemcacheParser(nullLogger);
     let cmdTokens;
-    parser.processCmd = (tokens) => {
+    parser.processCmd = tokens => {
       cmdTokens = tokens;
     };
     parser.onData(Buffer.from("test 0 0 100\r\n"));
@@ -99,7 +99,7 @@ describe("memcache-parser", function () {
   it("should process command in chunks", () => {
     const parser = new MemcacheParser(nullLogger);
     let cmdTokens;
-    parser.processCmd = (tokens) => {
+    parser.processCmd = tokens => {
       cmdTokens = tokens;
     };
     parser.onData(Buffer.from("t"));
@@ -115,7 +115,7 @@ describe("memcache-parser", function () {
   it("should preserve unicode in command line", () => {
     const parser = new MemcacheParser(nullLogger);
     let cmdTokens;
-    parser.processCmd = (tokens) => {
+    parser.processCmd = tokens => {
       cmdTokens = tokens;
     };
     parser.onData(Buffer.from("test hello维基百科 0"));
@@ -127,7 +127,7 @@ describe("memcache-parser", function () {
   it("should error on empty command lines", () => {
     let cmdTokens;
     const parser = new MemcacheParser(nullLogger);
-    parser.malformCommand = (x) => cmdTokens = x;
+    parser.malformCommand = x => (cmdTokens = x);
     parser.onData(Buffer.from("\r\n"));
     expect(cmdTokens).to.deep.equal([""]);
   });
@@ -135,7 +135,7 @@ describe("memcache-parser", function () {
   it("should error on empty command", () => {
     let cmdTokens;
     const parser = new MemcacheParser(nullLogger);
-    parser.malformCommand = (x) => cmdTokens = x;
+    parser.malformCommand = x => (cmdTokens = x);
     parser.onData(Buffer.from(" \r\n"));
     expect(cmdTokens).to.deep.equal(["", ""]);
   });
@@ -144,7 +144,7 @@ describe("memcache-parser", function () {
     let cmdTokens;
     const parser = new MemcacheParser(nullLogger);
     parser.processCmd = () => false;
-    parser.unknownCmd = (x) => cmdTokens = x;
+    parser.unknownCmd = x => (cmdTokens = x);
     parser.onData(Buffer.from("test 0 0 30\r\n"));
     expect(cmdTokens).to.deep.equal(["test", "0", "0", "30"]);
   });
@@ -152,10 +152,10 @@ describe("memcache-parser", function () {
   it("should consume pending data in a single chunk", () => {
     let pending;
     const parser = new MemcacheParser(nullLogger);
-    parser.processCmd = function (tokens) {
+    parser.processCmd = function(tokens) {
       this.initiatePending(tokens, +tokens[3]);
     };
-    parser.receiveResult = (x) => pending = x;
+    parser.receiveResult = x => (pending = x);
     const text = "hello维基百科";
     const byteLen = Buffer.byteLength(text);
     parser.onData(Buffer.from(`test 0 0 ${byteLen}\r\n${text}\r\n`));
@@ -168,10 +168,14 @@ describe("memcache-parser", function () {
     let data;
     let copied;
     const parser = new MemcacheParser(nullLogger);
-    parser.processCmd = function (tokens) {
+    parser.processCmd = function(tokens) {
       this.initiatePending(tokens, +tokens[3]);
     };
-    parser.malformDataStream = (x, d, n) => { pending = x; data = d; copied = n; };
+    parser.malformDataStream = (x, d, n) => {
+      pending = x;
+      data = d;
+      copied = n;
+    };
     const text = "hello维基百科";
     const byteLen = Buffer.byteLength(text);
     parser.onData(Buffer.from(`test 0 0 ${byteLen}\r\n${text}\n\r`));
@@ -183,10 +187,10 @@ describe("memcache-parser", function () {
   it("should consume pending data in splitted chunks", () => {
     let pending;
     const parser = new MemcacheParser(nullLogger);
-    parser.processCmd = function (tokens) {
+    parser.processCmd = function(tokens) {
       this.initiatePending(tokens, +tokens[3]);
     };
-    parser.receiveResult = (x) => pending = x;
+    parser.receiveResult = x => (pending = x);
     const text = "hello维基百科";
     const byteLen = Buffer.byteLength(text);
     parser.onData(Buffer.from(`test 0 0 ${byteLen}`));
@@ -201,14 +205,14 @@ describe("memcache-parser", function () {
     let pending;
     let cmdTokens2;
     const parser = new MemcacheParser(nullLogger);
-    parser.processCmd = function (tokens) {
+    parser.processCmd = function(tokens) {
       if (tokens[0] === "set") {
         this.initiatePending(tokens, +tokens[3]);
       } else if (tokens[0] === "get") {
         cmdTokens2 = tokens;
       }
     };
-    parser.receiveResult = (x) => pending = x;
+    parser.receiveResult = x => (pending = x);
     const text = "hello维基百科";
     const byteLen = Buffer.byteLength(text);
     parser.onData(Buffer.from(`set 0 0 ${byteLen}`));
@@ -224,7 +228,7 @@ describe("memcache-parser", function () {
     let warnMsg;
     const logger = {
       debug: () => undefined,
-      warn: (msg) => warnMsg = msg
+      warn: msg => (warnMsg = msg)
     };
     const parser = new MemcacheParser(logger);
     parser.onData(Buffer.from(`set 0 0 50`));
