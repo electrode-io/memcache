@@ -201,6 +201,23 @@ describe("memcache-parser", function() {
     expect(pending.data.toString()).to.equal(text);
   });
 
+  it("should handle data with 1 byte left after filling up pending", () => {
+    let pending;
+    const parser = new MemcacheParser(nullLogger);
+    parser.processCmd = function(tokens) {
+      this.initiatePending(tokens, +tokens[3]);
+    };
+    parser.receiveResult = x => (pending = x);
+    const text = "hello维基百科";
+    const byteLen = Buffer.byteLength(text);
+    parser.onData(Buffer.from(`test 0 0 ${byteLen}`));
+    parser.onData(Buffer.from(`\r\n${text.substr(0, 5)}`));
+    parser.onData(Buffer.from(`${text.substr(5)}\r`));
+    parser.onData(Buffer.from(`\n`));
+    expect(pending.data.length).to.equal(byteLen);
+    expect(pending.data.toString()).to.equal(text);
+  });
+
   it("should handle multiple commands", () => {
     let pending;
     let cmdTokens2;
