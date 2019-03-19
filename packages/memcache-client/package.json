@@ -24,10 +24,8 @@
   "dependencies": {
     "lodash.defaults": "^4.2.0",
     "memcache-parser": "^0.2.7",
-    "optional-require": "^1.0.0"
-  },
-  "optionalDependencies": {
-    "bluebird": "^2.10.2 || ^3.5.0"
+    "optional-require": "^1.0.0",
+    "bluebird": "^3.5.0"
   },
   "devDependencies": {
     "electrode-archetype-njs-module-dev": "^2.3.0",

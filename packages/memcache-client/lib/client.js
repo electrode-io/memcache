@@ -2,7 +2,7 @@
 
 const assert = require("assert");
 const optionalRequire = require("optional-require")(require);
-const Promise = optionalRequire("bluebird", { message: false, default: global.Promise });
+const Promise = require("bluebird");
 const Zstd = optionalRequire("node-zstd", false);
 const nodeify = require("./nodeify");
 const ValuePacker = require("./value-packer");

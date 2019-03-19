@@ -3,7 +3,7 @@
 const Net = require("net");
 const assert = require("assert");
 const optionalRequire = require("optional-require")(require);
-const Promise = optionalRequire("bluebird", { message: false, default: global.Promise });
+const Promise = require("bluebird");
 const MemcacheParser = require("memcache-parser");
 const cmdActions = require("./cmd-actions");
 const defaults = require("./defaults");
