@@ -1,6 +1,6 @@
 {
   "name": "memcache-client",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "NodeJS memcached client",
   "main": "lib/client.js",
   "scripts": {
