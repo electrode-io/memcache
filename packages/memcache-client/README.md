@@ -130,7 +130,8 @@ const options = {
   cmdTimeout: 3000, // command timeout in milliseconds
   connectTimeout: 8000, // connect to server timeout in ms
   compressor: require("custom-compressor"),
-  logger: require("./custom-logger")
+  logger: require("./custom-logger"),
+  Promise
 };
 
 const client = new MemcacheClient(options);
@@ -154,6 +155,7 @@ const client = new MemcacheClient(options);
 -   `dangleSocketWaitTimeout` - **_optional_** How long to wait for errors on dangle socket before destroying it.  DEFAULT: 5 minutes (30000 milliseconds)
 -   `compressor` - **_optional_** a custom compressor for compressing the data.  See [data compression](#data-compression) for more details.
 -   `logger` - **_optional_** Custom logger like this:
+-   `Promise` - **_optional_** Internally this module will try to find `bluebird` in your `node_modules` and fallback to `global.Promise`.  You can set this option to force the Promise to use.
 
 ```js
 module.exports = {
@@ -174,12 +176,12 @@ fairly long, this option allows you to set a shorter timeout.  When it triggers,
 will shutdown the connection and destroys the socket, and rejects with an error.  The error's
 message will be `"connect timeout"` and has the field `connecting` set to true.
 
-If you want to let the system connect timeout to take place, then set this option to 0 to 
+If you want to let the system connect timeout to take place, then set this option to 0 to
 completely disable it, or set it to a high value like 10 minutes in milliseconds (60000).
 
 #### Dangle Socket
 
-If you set a small custom `connectTimeout` and do not want to destroy the socket after it 
+If you set a small custom `connectTimeout` and do not want to destroy the socket after it
 triggers, then you will end up with a dangling socket.
 
 To enable keeping the dangling socket, set the option `keepDangleSocket` to `true`.
@@ -188,7 +190,7 @@ The client will automatically add a new error handler for the socket in case the
 `ETIMEDOUT` eventually comes back.  The client also sets a timeout to eventually destroy the
 socket in case the system never comes back with anything.
 
-To control the dangling wait timeout, use the option `dangleSocketWaitTimeout`.  It's default 
+To control the dangling wait timeout, use the option `dangleSocketWaitTimeout`.  It's default
 to 5 minutes.
 
 The client will emit the event `dangle-wait` with the following data:
@@ -207,7 +209,7 @@ If you have multiple redundant servers, you can pass them to the client with the
 {
   server: {
     servers: [
-      { 
+      {
         server: "name1.domain.com:11211",
         maxConnections: 3
       },

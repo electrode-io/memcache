@@ -24,6 +24,7 @@ class MemcacheClient extends EventEmitter {
     this._logger = options.logger !== undefined ? options.logger : nullLogger;
     this.options.cmdTimeout = options.cmdTimeout || defaults.CMD_TIMEOUT_MS;
     this._servers = new RedundantServers(this, options.server);
+    this.Promise = options.Promise || Promise;
   }
 
   shutdown() {
@@ -210,7 +211,7 @@ class MemcacheClient extends EventEmitter {
   //
 
   _send(conn, data, options) {
-    return Promise.try(() => {
+    try {
       // send data to connection
       if (typeof data === "function") {
         data(conn.socket);
@@ -219,10 +220,12 @@ class MemcacheClient extends EventEmitter {
       }
 
       // if no reply wanted then just return
-      if (options.noreply) return undefined;
+      if (options.noreply) {
+        return this.Promise.resolve();
+      }
 
       // queue up context to listen for reply
-      return new Promise((resolve, reject) => {
+      return new this.Promise((resolve, reject) => {
         const context = {
           error: null,
           results: {},
@@ -245,7 +248,9 @@ class MemcacheClient extends EventEmitter {
 
         conn.queueCommand(context);
       });
-    });
+    } catch (err) {
+      return this.Promise.reject(err);
+    }
   }
 
   // internal send that expects all params passed (even if they are undefined)
