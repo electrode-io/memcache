@@ -2,7 +2,7 @@
 
 /* eslint-disable no-bitwise,no-unused-vars,no-irregular-whitespace,no-nested-ternary */
 
-const MemcacheClient = require("../..");
+const MemcacheClient = require("../../lib/consistent-hashring-client");
 const chai = require("chai");
 const expect = chai.expect;
 const Promise = require("bluebird");
@@ -12,7 +12,7 @@ const memcached = require("memcached-njs");
 const text = require("../data/text");
 const ValueFlags = require("../../lib/value-flags");
 
-describe("memcache client", function() {
+describe("consistent memcache client", function() {
   process.on("unhandledRejection", e => {
     console.log("unhandledRejection", e);
   });
@@ -20,7 +20,6 @@ describe("memcache client", function() {
   let memcachedServer;
   let server;
   let serverPort;
-  let sysConnectTimeout = 0;
 
   const text1 = text.text1;
   const text2 = text.text2;
@@ -65,7 +64,7 @@ describe("memcache client", function() {
   });
 
   it("should handle ECONNREFUSED", () => {
-    const x = new MemcacheClient({ server: "localhost:65000" });
+    const x = new MemcacheClient("localhost:65000");
     let testError;
     return x
       .cmd("stats")
@@ -74,7 +73,7 @@ describe("memcache client", function() {
   });
 
   it("should handle ENOTFOUND", () => {
-    const x = new MemcacheClient({ server: "badhost.baddomain.com:65000" });
+    const x = new MemcacheClient("badhost.baddomain.com:65000");
     let testError;
     return x
       .cmd("stats")
@@ -83,69 +82,17 @@ describe("memcache client", function() {
   });
 
   it("should handle connection timeout", () => {
-    const x = new MemcacheClient({ server: "192.168.255.1:8181", connectTimeout: 50 });
+    const x = new MemcacheClient("192.168.255.1:8181", { connectTimeout: 50 });
     let testError;
     return x
-      .cmd("stats")
+      .cmd("", "stats")
       .catch(err => (testError = err))
       .then(() => expect(testError.message).includes("connect timeout"));
   });
 
-  it("should keep dangle socket and wait for system ETIMEDOUT error", () => {
-    console.log("testing wait system connect ETIMEDOUT - will take a loooong time");
-    const x = new MemcacheClient({
-      server: "192.168.255.1:8181",
-      connectTimeout: 50,
-      keepDangleSocket: true
-    });
-
-    let testError;
-    const start = Date.now();
-    return x
-      .cmd("stats")
-      .catch(err => (testError = err))
-      .then(() => {
-        expect(testError.message).includes("connect timeout");
-      })
-      .then(() => {
-        return new Promise(resolve => {
-          x.on("dangle-wait", data => {
-            expect(data.err).to.be.an.Error;
-            sysConnectTimeout = Date.now() - start;
-            resolve();
-          });
-        });
-      });
-  }).timeout(10 * 60 * 1000);
-
-  it("should not get system ETIMEDOUT error after custom connect timeout", () => {
-    console.log(
-      "testing no system connect ETIMEDOUT after custom connect timeout - will take a loooong time"
-    );
-    // make sure system connect timeout has been detected
-    expect(sysConnectTimeout).to.be.above(0);
-    const x = new MemcacheClient({
-      server: "192.168.255.1:8181",
-      connectTimeout: 50
-    });
-
-    let testError;
-    const start = Date.now();
-    return x
-      .cmd("stats")
-      .catch(err => (testError = err))
-      .then(() => {
-        expect(testError.message).includes("connect timeout");
-      })
-      .then(() => {
-        // wait detected system connect timeout plus 10 seconds
-        return Promise.delay(sysConnectTimeout + 10000);
-      });
-  }).timeout(10 * 60 * 1000);
-
   it("should timeout dangle wait", () => {
-    const x = new MemcacheClient({
-      server: "192.168.255.1:8181",
+    const x = new MemcacheClient(
+      "192.168.255.1:8181", {
       connectTimeout: 50,
       keepDangleSocket: true,
       dangleSocketWaitTimeout: 100
@@ -154,7 +101,7 @@ describe("memcache client", function() {
     let testError;
     const start = Date.now();
     return x
-      .cmd("stats")
+      .cmd("", "stats")
       .catch(err => (testError = err))
       .then(() => {
         expect(testError.message).includes("connect timeout");
@@ -170,12 +117,12 @@ describe("memcache client", function() {
   });
 
   it("should take a custom logger if it's not undefined", () => {
-    const x = new MemcacheClient({ server, logger: null });
+    const x = new MemcacheClient(server, { logger: null });
     expect(x._logger).to.be.null;
   });
 
   it("should use callback on get and set", done => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `foo_${Date.now()}`;
     x.set(key, "bar", err => {
       expect(err).to.be.not.ok;
@@ -189,12 +136,12 @@ describe("memcache client", function() {
   });
 
   it("should use callback for send", done => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `foo_${Date.now()}`;
-    x.send(`set ${key} 0 0 5\r\nhello\r\n`, "bar", (err, data) => {
+    x.send(key, `set ${key} 0 0 5\r\nhello\r\n`, "bar", (err, data) => {
       expect(err).to.be.not.ok;
       expect(data).to.deep.equal(["STORED"]);
-      x.send(`get ${key}\r\n`, (gerr, v) => {
+      x.send(key, `get ${key}\r\n`, (gerr, v) => {
         expect(gerr).to.be.not.ok;
         expect(v[key].value).to.equal("hello");
         x.shutdown();
@@ -204,22 +151,22 @@ describe("memcache client", function() {
   });
 
   it("should set value with custom lifetime", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     let testOptions;
-    x._callbackSend = (data, options) => (testOptions = options);
+    x._callbackSend = (key, data, options) => (testOptions = options);
     const key = `foo_${Date.now()}`;
     x.set(key, "bar", { lifetime: 500 });
     expect(testOptions.lifetime).to.equal(500);
   });
 
   it("should ignore NOT_STORED reply for set if client ignore option is true", () => {
-    const x = new MemcacheClient({ server, ignoreNotStored: true });
+    const x = new MemcacheClient(server, { ignoreNotStored: true });
     memcachedServer.asyncMode(true);
     return x.set("key", "data").finally(() => memcachedServer.asyncMode(false));
   });
 
   it("should ignore NOT_STORED reply for set if command ignore option is true", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     memcachedServer.asyncMode(true);
     return x
       .set("key", "data", { ignoreNotStored: true })
@@ -227,7 +174,7 @@ describe("memcache client", function() {
   });
 
   it("should return set errors other than NOT_STORED even if ignore option is true", () => {
-    const x = new MemcacheClient({ server, ignoreNotStored: true, cmdTimeout: 100 });
+    const x = new MemcacheClient(server, { ignoreNotStored: true, cmdTimeout: 100 });
     memcachedServer.pause();
     let testErr;
     return x
@@ -248,7 +195,7 @@ describe("memcache client", function() {
     const numValue = 12345;
     const binValue = Buffer.allocUnsafe(1500);
     const jsonData = { 天津经济技术开发区: text2 };
-    const x = new MemcacheClient({ server: { server, maxConnections } });
+    const x = new MemcacheClient(server, { maxConnections });
 
     const expectedConnections =
       maxConnections === undefined ? 1 : maxConnections < 5 ? maxConnections : 5;
@@ -280,13 +227,6 @@ describe("memcache client", function() {
         Promise.all([x.get(key1), x.get(key2), x.get(key3), x.get(key4), x.get(key5)]).then(
           verifyArrayResults
         )
-      )
-      .then(() => x.get([key1, key2, key3, key4, key5]).then(verifyResults))
-      .then(() => x.send(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`).then(verifyResults))
-      .then(() =>
-        x
-          .send(socket => socket.write(`gets ${key1} ${key2} ${key3} ${key4} ${key5}\r\n`))
-          .then(verifyResults)
       )
       .then(() => expect(x._servers._getNode().connections.length).to.equal(expectedConnections))
       .finally(() => x.shutdown());
@@ -324,7 +264,7 @@ describe("memcache client", function() {
     const a = {};
     const b = { a };
     a.b = b;
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     let testError;
     return x
       .set("foo", a)
@@ -338,11 +278,11 @@ describe("memcache client", function() {
     const a = {};
     const b = { a };
     a.b = b;
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const objFlag = ValueFlags.TYPE_JSON;
     let testError;
     return x
-      .send(`set foo ${objFlag} 60 5\r\nabcde\r\n`)
+      .send("foo", `set foo ${objFlag} 60 5\r\nabcde\r\n`)
       .then(() => x.get("foo"))
       .catch(err => (testError = err))
       .then(r => {
@@ -351,11 +291,11 @@ describe("memcache client", function() {
   });
 
   it("should gracefully propagate decompress error", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const objFlag = ValueFlags.TYPE_JSON | ValueFlags.COMPRESS;
     let testError;
     return x
-      .send(`set foo ${objFlag} 60 5\r\nabcde\r\n`)
+      .send("foo", `set foo ${objFlag} 60 5\r\nabcde\r\n`)
       .then(() => x.get("foo"))
       .catch(err => (testError = err))
       .then(r => {
@@ -370,7 +310,7 @@ describe("memcache client", function() {
       }
     };
 
-    const x = new MemcacheClient({ server, compressor });
+    const x = new MemcacheClient(server, { compressor });
     const data = Buffer.allocUnsafe(200);
     let testError;
     return x
@@ -386,7 +326,7 @@ describe("memcache client", function() {
     const key2 = `image_${Date.now()}`;
     const key3 = `image_${Date.now()}`;
     const thumbsUp = Fs.readFileSync(Path.join(__dirname, "../data/thumbs-up.jpg"));
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
 
     return Promise.all([x.set(key1, thumbsUp), x.set(key2, thumbsUp), x.set(key3, thumbsUp)])
       .then(v => {
@@ -404,7 +344,7 @@ describe("memcache client", function() {
 
   it("should add an entry and then get NOT_STORED when add it again", () => {
     let addErr;
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `poem1-风柔日薄春犹早_${Date.now()}`;
     return Promise.try(() => x.add(key, poem1))
       .then(() => x.get(key))
@@ -416,7 +356,7 @@ describe("memcache client", function() {
   });
 
   const testReplace = (setCompress, replaceCompress) => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `poem_${Date.now()}`;
     return Promise.try(() => x.set(key, poem2, { compress: setCompress }))
       .then(() => x.get(key))
@@ -436,7 +376,7 @@ describe("memcache client", function() {
   });
 
   it("should fail replace non-existing item", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `foo_${Date.now()}`;
     let testError;
     return x
@@ -446,7 +386,7 @@ describe("memcache client", function() {
   });
 
   it("should set an entry and then append to it", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `poem_${Date.now()}`;
     return Promise.try(() => x.set(key, poem2))
       .then(() => x.get(key))
@@ -458,7 +398,7 @@ describe("memcache client", function() {
   });
 
   it("should set an entry and then prepend to it", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `poem_${Date.now()}`;
     return Promise.try(() => x.set(key, poem4))
       .then(() => x.get(key))
@@ -469,35 +409,8 @@ describe("memcache client", function() {
       .finally(() => x.shutdown());
   });
 
-  it("should set an entry and then cas it", () => {
-    const x = new MemcacheClient({ server });
-    const key = `poem_${Date.now()}`;
-    return Promise.try(() => x.set(key, poem4))
-      .then(() => x.gets(key))
-      .tap(r => expect(r.value).to.equal(poem4))
-      .tap(r => expect(r.casUniq).to.be.ok)
-      .then(r => x.cas(key, poem5, { casUniq: r.casUniq, compress: true }))
-      .then(() => x.get(key))
-      .then(r => expect(r.value).to.equal(poem5))
-      .finally(() => x.shutdown());
-  });
-
-  it("should fail cas with an outdated id", () => {
-    const x = new MemcacheClient({ server });
-    const key = `poem_${Date.now()}`;
-    let casError;
-    return Promise.try(() => x.set(key, poem4))
-      .then(() => x.gets(key))
-      .tap(r => expect(r.value).to.equal(poem4))
-      .tap(r => expect(r.casUniq).to.be.ok)
-      .then(r => x.cas(key, poem3, { casUniq: r.casUniq + 500 }))
-      .catch(err => (casError = err))
-      .then(() => expect(casError.message).to.equal("EXISTS"))
-      .finally(() => x.shutdown());
-  });
-
   it("should incr and decr value", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `num_${Date.now()}`;
     return Promise.try(() => x.set(key, "12345"))
       .then(() => x.incr(key, 5))
@@ -508,7 +421,7 @@ describe("memcache client", function() {
   });
 
   it("should set and delete a key", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `num_${Date.now()}`;
     return Promise.try(() => x.set(key, "12345"))
       .then(r => expect(r).to.deep.equal(["STORED"]))
@@ -522,9 +435,9 @@ describe("memcache client", function() {
   });
 
   it("should receive stats", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `num_${Date.now()}`;
-    return Promise.try(() => x.cmd(`stats`))
+    return Promise.try(() => x.cmd("", `stats`))
       .then(r => {
         const stat = r.STAT;
         expect(stat).to.be.ok;
@@ -535,7 +448,7 @@ describe("memcache client", function() {
   });
 
   it("should fire and forget if noreply is set", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `poem1_${Date.now()}`;
     return Promise.try(() => x.set(key, poem1, { noreply: true }))
       .then(v => expect(v).to.be.undefined)
@@ -545,13 +458,13 @@ describe("memcache client", function() {
   });
 
   it("should send cmd with fire and forget if noreply is set", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `foo_${Date.now()}`;
     return Promise.try(() => x.set(key, "1", { noreply: true }))
       .then(v => expect(v).to.be.undefined)
       .then(() => x.get(key))
       .then(v => expect(v.value).to.deep.equal("1"))
-      .then(() => x.cmd(`incr ${key} 5`, { noreply: true }))
+      .then(() => x.cmd(key, `incr ${key} 5`, { noreply: true }))
       .then(v => expect(v).to.be.undefined)
       .then(() => x.get(key))
       .then(v => expect(v.value).to.deep.equal("6"))
@@ -559,7 +472,7 @@ describe("memcache client", function() {
   });
 
   it("should update exptime with touch", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     const key = `poem1_${Date.now()}`;
     return Promise.try(() => x.set(key, poem1, { noreply: true }))
       .then(v => expect(v).to.be.undefined)
@@ -569,7 +482,7 @@ describe("memcache client", function() {
   });
 
   it("should retrieve version", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     return x
       .version()
       .then(v => {
@@ -584,14 +497,14 @@ describe("memcache client", function() {
       return undefined;
     }
     let firstConnId = 0;
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     return x
-      .cmd("stats")
+      .cmd("", "stats")
       .then(v => {
         firstConnId = v.STAT[2][1];
         x._servers._getNode().connections[0].socket.emit("error", new Error("ECONNRESET"));
       })
-      .then(() => x.cmd("stats"))
+      .then(() => x.cmd("", "stats"))
       .then(v => {
         expect(firstConnId).to.not.equal(0);
         expect(firstConnId).to.not.equal(v.STAT[2][1]);
@@ -604,14 +517,14 @@ describe("memcache client", function() {
       return undefined;
     }
     let firstConnId = 0;
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     return x
-      .cmd("stats")
+      .cmd("", "stats")
       .then(v => {
         firstConnId = v.STAT[2][1];
         x._servers._getNode().connections[0].socket.emit("timeout");
       })
-      .then(() => x.cmd("stats"))
+      .then(() => x.cmd("", "stats"))
       .then(v => {
         expect(firstConnId).to.not.equal(0);
         expect(firstConnId).to.not.equal(v.STAT[2][1]);
@@ -624,31 +537,31 @@ describe("memcache client", function() {
     }
     let firstConnId = 0;
     let timeoutError;
-    const x = new MemcacheClient({ server, cmdTimeout: 100 });
+    const x = new MemcacheClient(server, { cmdTimeout: 100 });
     return x
-      .cmd("stats")
+      .cmd("", "stats")
       .then(v => {
         firstConnId = v.STAT[2][1];
-        memcachedServer.pause();
+        return memcachedServer.pause();
       })
-      .then(() => Promise.all([x.cmd("stats"), x.get("foo"), x.set("test", "data")]))
+      .then(() => Promise.all([x.cmd("", "stats"), x.get("foo"), x.set("test", "data")]))
       .catch(err => (timeoutError = err))
       .then(() => {
         expect(timeoutError).to.be.ok;
         expect(timeoutError.message).to.equal("Command timeout");
         memcachedServer.unpause();
-        return x.cmd("stats");
+        return x.cmd("", "stats");
       })
       .then(v => {
         expect(x._servers._getNode().connections[0]._cmdTimeout).to.equal(100);
         expect(firstConnId).to.not.equal(0);
         expect(firstConnId).to.not.equal(v.STAT[2][1]);
       })
-      .finally(() => memcachedServer.unpause());
+      .finally(() => { memcachedServer.unpause(); x.shutdown(); });
   });
 
   it("should shutdown without connection", () => {
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     x.shutdown();
   });
 
@@ -656,7 +569,7 @@ describe("memcache client", function() {
     const port = memcachedServer._server.address().port;
     expect(memcachedServer).to.be.OK;
     memcachedServer.shutdown();
-    const x = new MemcacheClient({ server });
+    const x = new MemcacheClient(server);
     let testErr;
     return x
       .set("test", "hello")
