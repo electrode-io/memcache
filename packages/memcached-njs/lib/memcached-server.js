@@ -8,7 +8,7 @@ const Promise = require("bluebird");
 
 // https://github.com/memcached/memcached/blob/master/doc/protocol.txt
 
-const storeCommands = ["set", "add", "replace", "append", "prepend", "prepend", "cas"];
+const storeCommands = ["set", "add", "replace", "append", "prepend", "cas"];
 
 const replies = {
   STORED: "STORED",
