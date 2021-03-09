@@ -22,9 +22,11 @@
   "author": "Joel Chen <joel123@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
+    "lodash": "4.17.11",
     "lodash.defaults": "^4.2.0",
     "memcache-parser": "^0.2.7",
-    "optional-require": "^1.0.0"
+    "optional-require": "^1.0.0",
+    "hashring": "3.2.0"
   },
   "devDependencies": {
     "electrode-archetype-njs-module-dev": "^2.3.0",
