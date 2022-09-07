@@ -1,9 +1,9 @@
 {
-  "lerna": "2.0.0-rc.1",
   "version": "independent",
   "command.publish.ignore": {
-    "ignore": [
-      "*.md"
-    ]
-  }
+    "ignore": ["*.md"]
+  },
+  "npmClient": "npm",
+  "useWorkspaces": false,
+  "packages": ["packages/*"]
 }

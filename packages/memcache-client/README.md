@@ -27,8 +27,13 @@ $ npm i memcache-client --save
 ## Usage
 
 ```js
-const MemcacheClient = require("memcache-client");
-const expect = require("chai").expect;
+import {
+  MemcacheClient,
+  MultiRetrievalResponse,
+  MultiCasRetrievalResponse,
+  StatsCommandResponse,
+} from "memcache-client";
+import assert from "node:assert";
 const server = "localhost:11211";
 // create a normal client
 
@@ -45,29 +50,53 @@ const mClient = new MemcacheClient({ server: { server, maxConnections: 5 } });
 
 // with callback
 
-client.set("key", "data", (err, r) => { expect(r).to.deep.equal(["STORED"]); });
-client.get("key", (err, data) => { expect(data.value).to.equal("data"); });
+client.set("key", "data", (err, r) => {
+  assert.deepEqual(r, ["STORED"]);
+});
+client.get("key", (err, data) => {
+  assert.equal(data?.value, "data");
+});
+
+// with callback - use generic to provide type of data.value
+
+client.get<string>("key", (err, data) => {
+  assert.equal(data?.value, "data"); // data?.value is string instead of unknown
+});
 
 // with promise
 
-client.set("key", "data").then((r) => expect(r).to.deep.equal(["STORED"]));
-client.get("key").then((data) => expect(data.value).to.equal("data"));
+client.set("key", "data").then((r) => assert.deepEqual(r, ["STORED"]));
+client.get("key").then((data) => assert.equal(data?.value, "data"));
+
+// with promise - use generic to provide type of data.value
+
+client.get<string>("key").then((data) => assert.equal(data?.value, "data"));
 
 // concurrency using promise
 
-Promise.all([client.set("key1", "data1"), client.set("key2", "data2")])
-  .then((r) => expect(r).to.deep.equal([["STORED"], ["STORED"]]));
-Promise.all([client.get("key1"), client.get("key2")])
-  .then((r) => {
-    expect(r[0].value).to.equal("data1");
-    expect(r[1].value).to.equal("data2");
-  });
+Promise.all([client.set("key1", "data1"), client.set("key2", "data2")]).then((r) =>
+  assert.deepEqual(r, [["STORED"], ["STORED"]])
+);
+Promise.all([client.get("key1"), client.get("key2")]).then((r) => {
+  assert.equal(r[0].value, "data1");
+  assert.equal(r[1].value, "data2");
+});
 
 // get multiple keys
+// NOTE: For being able to correctly type the result of getting multiple keys with a single call,
+// use the helper type MultiRetrievalResponse or MultiCasRetrievalResponse
+// depending of the executed function, and send the desire type
 
-client.get(["key1", "key2"]).then((results) => {
-  expect(results["key1"].value).to.equal("data1");
-  expect(results["key2"].value).to.equal("data2");
+// use MultiRetrievalResponse for client.get
+client.get<MultiRetrievalResponse<string>>(["key1", "key2"]).then((results) => {
+  assert.equal(results["key1"].value, "data1");
+  assert.equal(results["key2"].value, "data2");
+});
+
+// use MultiCasRetrievalResponse for client.gets
+client.gets<MultiCasRetrievalResponse<string>>(["key1", "key2"]).then((results) => {
+  assert.equal(results["key1"].value, "data1");
+  assert.equal(results["key2"].value, "data2");
 });
 
 // gets and cas (check and set)
@@ -77,17 +106,21 @@ client.gets("key1").then((v) => client.cas("key1", "casData", { casUniq: v.casUn
 // enable compression (if data size >= 100 bytes)
 
 const data = Buffer.alloc(500);
-client.set("key", data, { compress: true }).then((r) => expect(r).to.deep.equal(["STORED"]));
+client.set("key", data, { compress: true }).then((r) => assert.deepEqual(r, ["STORED"]));
 
 // fire and forget
 
 client.set("key", data, { noreply: true });
 
 // send any arbitrary command (\r\n will be appended automatically)
+// NOTE: client.cmd can accept a generic same way as client.get and client.gets
 
-client.cmd("stats").then((r) => { console.log(r.STAT) });
+// there is already a type for "stats" command
+client.cmd<StatsCommandResponse>("stats").then((r) => {
+  console.log(r.STAT);
+});
 client.set("foo", "10", { noreply: true });
-client.cmd("incr foo 5").then((v) => expect(+v).to.equal(15));
+client.cmd<string>("incr foo 5").then((v) => assert.equal(+v, 15));
 
 // you can also send arbitary command with noreply option (noreply will be appended automatically)
 
@@ -95,15 +128,15 @@ client.cmd("incr foo 5", { noreply: true });
 
 // send any arbitrary data (remember \r\n)
 
-client.send("set foo 0 0 5\r\nhello\r\n").then((r) => expect(r).to.deep.equal(["STORED"]));
+client.send("set foo 0 0 5\r\nhello\r\n").then((r) => assert.deepEqual(r, ["STORED"]));
 ```
 
 ## Commands with a method
 
 All take an optional `callback`.  If it's not provided then all return a `Promise`.
 
--   `client.get(key, [callback])` or `client.get([key1, key2], [callback])`
--   `client.gets(key, [callback])` or `client.gets([key1, key2], [callback])`
+-   `client.get<ReturnValueType>(key, [callback])` or `client.get([key1, key2], [callback])`
+-   `client.gets<ReturnValueType>(key, [callback])` or `client.gets([key1, key2], [callback])`
 -   `client.set(key, data, [options], [callback])`
 -   `client.add(key, data, [options], [callback])`
 -   `client.replace(key, data, [options], [callback])`
@@ -277,11 +310,11 @@ For the `cas` command, `options` must contain a `casUniq` value that you receive
 
 ## Other methods
 
--   `client.send(data, [options], [callback])`
+-   `client.send<ReturnValueType>(data, [options], [callback])`
 -   `client.xsend(data, [options])`
--   `client.cmd(data, [options], [callback])`
+-   `client.cmd<ReturnValueType>(data, [options], [callback])`
 -   `client.store(cmd, key, value, [optons], [callback])`
--   `client.retrieve(cmd, key, [options], [callback])`
+-   `client.retrieve<ReturnValueType>(cmd, key, [options], [callback])`
 -   `client.xretrieve(cmd, key)`
 
 ## License
