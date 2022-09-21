@@ -21,12 +21,11 @@
   "author": "Joel Chen <joel123@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "bluebird": "^3.5.0",
-    "memcache-parser": "^0.2.7"
+    "bluebird": "3.5.0",
+    "memcache-parser": "0.2.7"
   },
   "devDependencies": {
-    "electrode-archetype-njs-module-dev": "^2.3.0",
-    "memcached": "^2.2.2"
+    "memcached": "2.2.2"
   },
   "nyc": {
     "all": true,
