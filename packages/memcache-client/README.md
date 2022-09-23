@@ -24,6 +24,9 @@ Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to p
 $ npm i memcache-client --save
 ```
 
+### Notes
+- If you want to use compression features and a compression library is not provided, `zstd.ts` is used by default, for that implementation to work, `zstd` is **required** to be an executable program in the OS
+
 ## Usage
 
 ```js
