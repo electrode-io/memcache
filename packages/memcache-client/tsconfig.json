@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["./src"],
+  "references": [{ "path": "../memcache-parser" }, { "path": "../memcached-njs" }]
+}

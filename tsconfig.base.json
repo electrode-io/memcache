@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "alwaysStrict": true,
+    "composite": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": true,
+    "lib": ["es2018"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "preserveConstEnums": true,
+    "plugins": [],
+    "pretty": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "strictFunctionTypes": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "target": "es2018",
+    "types": ["node", "jest"]
+  },
+  "exclude": ["node_modules", "dist"]
+}
