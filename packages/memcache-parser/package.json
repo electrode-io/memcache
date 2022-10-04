@@ -8,6 +8,7 @@
     "build": "tsc",
     "coverage": "xrun xarc/test-cov",
     "lint": "xrun xarc/lint",
+    "prepublishOnly": "(cd ../../ && npm run prepublishOnly)",
     "test": "npm run lint && xrun xarc/test-only"
   },
   "repository": {

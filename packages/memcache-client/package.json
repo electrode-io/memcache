@@ -10,6 +10,7 @@
     "lint": "xrun xarc/lint",
     "test": "npm run lint && xrun xarc/test-only",
     "playground": "ts-node-dev ./src/playground.ts",
+    "prepublishOnly": "(cd ../../ && npm run prepublishOnly)",
     "testp": "MEMCACHED_SERVER=10.1.1.1:11211 npm test"
   },
   "repository": {
@@ -39,9 +40,6 @@
     "source-map-support": "0.5.19",
     "zstd.ts": "1.1.3"
   },
-  "files": [
-    "dist"
-  ],
   "@xarc/module-dev": {
     "features": [
       "eslint",
