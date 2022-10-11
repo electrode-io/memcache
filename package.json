@@ -3,12 +3,14 @@
   "version": "0.0.1",
   "description": "memcached client and server in NodeJS",
   "scripts": {
-    "bootstrap": "lerna bootstrap",
+    "bootstrap": "lerna bootstrap --no-ci",
     "build": "npm run tsc",
     "build:clean": "npm run tsc -- --clean",
     "lint": "lerna run --no-bail lint",
+    "prepublishOnly": "npm run build:clean && npm run build",
     "tsc": "tsc --build tsconfig.build.json",
-    "test": "lerna run test"
+    "test": "lerna run test",
+    "version": "lerna version"
   },
   "keywords": [],
   "author": "Joel Chen <joel123@gmail.com>",
@@ -31,8 +33,5 @@
     "ts-node": "10.9.1",
     "ts-node-dev": "2.0.0",
     "typescript": "4.7.4"
-  },
-  "workspaces": [
-    "packages/*"
-  ]
+  }
 }

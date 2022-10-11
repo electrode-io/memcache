@@ -5,7 +5,8 @@ import { Socket } from "net";
 const Promise = optionalRequire("bluebird", {
   default: global.Promise,
 });
-import * as Zstd from "zstd.ts";
+const Zstd = optionalRequire("zstd.ts");
+
 import nodeify from "./nodeify";
 import ValuePacker from "./value-packer";
 import nullLogger from "./null-logger";
