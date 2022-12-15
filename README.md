@@ -23,6 +23,13 @@ This repo uses [lerna](https://lernajs.io/) to manage multiple packages.
 -   [memcache-parser](packages/memcache-parser) - [![parser NPM version][parser-npm-image]][parser-npm-url] A very efficient memcached ASCII protocol parser.
 -   [memcached-njs](packages/memcached-njs) - [![server NPM version][server-npm-image]][server-npm-url] A working memcached server implemented in NodeJS for tests.
 
+## Development environment installation  
+
+1. Clone this repo
+2. run `nvm use`
+3. run `npm ci`
+4. run `npm run bootstrap`
+5. optional: just to make sure everything is fine run `npm run build` and check if there's no error using that command
 ## Publishing notes
 - Recommended publish flow is to publish the modules individually using `npm publish`, can be improved to use lerna in the future
 

@@ -14,6 +14,7 @@ import Path from "path";
 import { text1, text2, poem1, poem2, poem3, poem4, poem5 } from "../data/text";
 import NullLoger from "../../lib/null-logger";
 import memcached, { MemcachedServer } from "memcached-njs";
+import { AddressInfo } from "net";
 
 describe("memcache client", function () {
   process.on("unhandledRejection", (e) => {
@@ -35,7 +36,7 @@ describe("memcache client", function () {
     }
     return memcached.startServer(options).then((ms: MemcachedServer) => {
       console.log("memcached server started");
-      serverPort = ms._server.address().port;
+      serverPort = (ms._server?.address() as AddressInfo).port;
       server = `localhost:${serverPort}`;
       memcachedServer = ms;
     });
@@ -47,7 +48,7 @@ describe("memcache client", function () {
     const serverInstance = await memcached.startServer({ logger: NullLoger, port });
     console.log("single memcached server started");
     return {
-      serverUrl: `localhost:${serverInstance._server.address().port}`,
+      serverUrl: `localhost:${(serverInstance._server?.address() as AddressInfo).port}`,
       server: serverInstance,
     };
   };
@@ -790,7 +791,7 @@ describe("memcache client", function () {
   });
 
   it("should be able to connect after initial connection failure", (done) => {
-    const port = memcachedServer._server.address().port;
+    const { port } = memcachedServer._server?.address() as AddressInfo;
     expect(memcachedServer).not.toBeNull();
     memcachedServer.shutdown();
     const x = new MemcacheClient({ server });

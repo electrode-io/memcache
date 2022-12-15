@@ -3,6 +3,13 @@ coverage
 node_modules
 .npmignore
 gulpfile.js
-xclap.js
+xrun-tasks.ts
 .nyc_output
-/test
+/test/
+/dist/test/
+*.tsbuildinfo
+tsconfig.json
+jest.config.js
+.eslintrc.js
+/src
+package-lock.json

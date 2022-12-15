@@ -1,106 +1,50 @@
-"use strict";
-
 /* eslint-disable no-console,no-magic-numbers,no-var,camelcase,no-unused-vars,max-statements */
-
-const Net = require("net");
-const MemcacheParser = require("./memcache-parser");
-const Promise = require("bluebird");
+import net, { Server, AddressInfo, Socket } from "net";
+import { DefaultLogger, PendingData } from "../types";
+import MemcacheConnection from "./memcache-connection";
 
 // https://github.com/memcached/memcached/blob/master/doc/protocol.txt
+/* eslint-disable @typescript-eslint/no-unused-vars,no-shadow */
 
-const storeCommands = ["set", "add", "replace", "append", "prepend", "cas"];
+enum Replies {
+  STORED = "STORED",
+  NOT_STORED = "NOT_STORED",
+  END = "END",
+  EXISTS = "EXISTS",
+  NOT_FOUND = "NOT_FOUND",
+  DELETED = "DELETED",
+  TOUCHED = "TOUCHED",
+  OK = "OK",
+  CLIENT_ERROR = "CLIENT_ERROR",
+}
 
-const replies = {
-  STORED: "STORED",
-  NOT_STORED: "NOT_STORED",
-  END: "END",
-  EXISTS: "EXISTS",
-  NOT_FOUND: "NOT_FOUND",
-  DELETED: "DELETED",
-  TOUCHED: "TOUCHED",
-  OK: "OK",
-  CLIENT_ERROR: "CLIENT_ERROR",
-};
-
-const logger = {
+const logger: DefaultLogger = {
   debug: (msg) => console.log(msg),
   info: (msg) => console.log(msg),
   warn: (msg) => console.log(msg),
   error: (msg) => console.log(msg),
 };
 
-class Connection extends MemcacheParser {
-  constructor(server, socket) {
-    super();
-    this.server = server;
-    this.logger = server.logger;
-    this.socket = socket;
-    this._id = server.getNewClientID();
-    this._dataQueue = [];
-    this._isPaused = false;
+export type MemcacheServerOptions = {
+  port?: number | string | undefined;
+  logger?: any;
+  compress?: boolean | undefined;
+};
 
-    socket.on("data", (data) => {
-      if (this._isPaused) {
-        this.logger.info("server paused, queueing data");
-        this._dataQueue.unshift(data);
-      } else {
-        this.onData(data);
-      }
-    });
+export class MemcachedServer {
+  private _casID: number;
+  private _cache = new Map();
+  private _clients: Map<number, { connection: MemcacheConnection }>;
+  private _isPaused: boolean;
+  private _port: number | undefined;
+  private _asyncMode: boolean | undefined;
 
-    socket.on("end", () => {
-      this.logger.info("connection", this._id, "end");
-      this.server.end(this);
-    });
-  }
+  _server: Server | undefined;
+  clientID: number;
+  options: MemcacheServerOptions;
+  logger: DefaultLogger;
 
-  processCmd(cmdTokens) {
-    const socket = this.socket;
-    const cmd = cmdTokens[0];
-    if (storeCommands.indexOf(cmd) >= 0) {
-      const length = +cmdTokens[4];
-      this.initiatePending(cmdTokens, length);
-    } else {
-      const x = this.server[`cmd_${cmd}`];
-      if (x) {
-        x.call(this.server, cmdTokens, this);
-      } else {
-        socket.end("CLIENT_ERROR malformed request\r\n");
-        return false;
-      }
-    }
-    return true;
-  }
-
-  pause() {
-    this._isPaused = true;
-  }
-
-  unpause() {
-    if (this._isPaused) {
-      this._isPaused = false;
-      let data;
-      while ((data = this._dataQueue.pop())) {
-        this.onData(data);
-      }
-    }
-  }
-
-  receiveResult(pending) {
-    this.server[`cmd_${pending.cmd}`](pending, this);
-  }
-
-  send(data) {
-    this.socket.write(data);
-  }
-
-  close() {
-    this.socket.end();
-  }
-}
-
-class MemcacheServer {
-  constructor(options) {
+  constructor(options: MemcacheServerOptions) {
     this.clientID = 1;
     this._casID = 1;
     this._cache = new Map();
@@ -110,8 +54,8 @@ class MemcacheServer {
     this.logger = options.logger || logger;
   }
 
-  startup() {
-    const server = Net.createServer();
+  startup(): Promise<MemcachedServer> {
+    const server = net.createServer();
     server.on("connection", this.newConnection.bind(this));
     this._server = server;
     return new Promise((resolve, reject) => {
@@ -121,7 +65,8 @@ class MemcacheServer {
       });
 
       server.listen(this.options.port, () => {
-        this._port = server.address().port;
+        this._port = (server.address() as AddressInfo).port;
+
         this.logger.info(`server listening at port ${this._port}`);
         server.removeAllListeners("error");
         server.on("error", this._onError.bind(this));
@@ -132,41 +77,41 @@ class MemcacheServer {
 
   // pause processing incoming data
   // instead queue them up for later
-  pause() {
+  pause(): void {
     this._isPaused = true;
     this._clients.forEach((x) => x.connection.pause());
   }
 
-  unpause() {
+  unpause(): void {
     this._isPaused = false;
     this._clients.forEach((x) => x.connection.unpause());
   }
 
-  asyncMode(flag) {
+  asyncMode(flag: boolean): void {
     this._asyncMode = flag;
   }
 
-  _onError(err) {
+  _onError(err: Error): void {
     this.logger.info(`server error ${err}`);
   }
 
-  getNewClientID() {
+  getNewClientID(): number {
     return this.clientID++;
   }
 
-  getNextCasID() {
+  getNextCasID(): number {
     return this._casID++;
   }
 
-  newConnection(socket) {
-    const connection = new Connection(this, socket);
-    this._clients.set(connection._id, { connection });
+  newConnection(socket: Socket): void {
+    const connection = new MemcacheConnection(this, socket);
+    this._clients.set(connection.getId(), { connection });
     if (this._isPaused) {
       connection.pause();
     }
   }
 
-  _reply(connection, cmdTokens, reply) {
+  _reply(connection: MemcacheConnection, cmdTokens: string[], reply: Replies | string): void {
     if (cmdTokens[cmdTokens.length - 1] !== "noreply") {
       connection.send(`${reply}\r\n`);
     }
@@ -262,7 +207,7 @@ class MemcacheServer {
 
   // - "NOT_FOUND\r\n" to indicate that the item you are trying to store
   // with a "cas" command did not exist.
-  _store(pending, connection) {
+  _store(pending: PendingData, connection: MemcacheConnection): void {
     const e = {
       flag: pending.cmdTokens[2],
       data: pending.data,
@@ -271,22 +216,22 @@ class MemcacheServer {
     };
     this._cache.set(pending.cmdTokens[1], e);
     if (pending.cmdTokens[0] === "set" && this._asyncMode) {
-      return this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
+      return this._reply(connection, pending.cmdTokens, Replies.NOT_STORED);
     }
 
-    return this._reply(connection, pending.cmdTokens, replies.STORED);
+    return this._reply(connection, pending.cmdTokens, Replies.STORED);
   }
 
   // "set" means "store this data".
-  cmd_set(pending, connection) {
+  cmd_set(pending: PendingData, connection: MemcacheConnection): void {
     this._store(pending, connection);
   }
 
   // "add" means "store this data, but only if the server *doesn't* already
   // hold data for this key".
-  cmd_add(pending, connection) {
+  cmd_add(pending: PendingData, connection: MemcacheConnection): void {
     if (this._cache.has(pending.cmdTokens[1])) {
-      this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
+      this._reply(connection, pending.cmdTokens, Replies.NOT_STORED);
     } else {
       this._store(pending, connection);
     }
@@ -294,11 +239,11 @@ class MemcacheServer {
 
   // "replace" means "store this data, but only if the server *does*
   // already hold data for this key".
-  cmd_replace(pending, connection) {
+  cmd_replace(pending: PendingData, connection: MemcacheConnection): void {
     if (this._cache.has(pending.cmdTokens[1])) {
       this._store(pending, connection);
     } else {
-      this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
+      this._reply(connection, pending.cmdTokens, Replies.NOT_STORED);
     }
   }
 
@@ -307,28 +252,28 @@ class MemcacheServer {
   // settings.
 
   // "append" means "add this data to an existing key after existing data".
-  cmd_append(pending, connection) {
+  cmd_append(pending: PendingData, connection: MemcacheConnection): void {
     const key = pending.cmdTokens[1];
     if (this._cache.has(key)) {
       const e = this._cache.get(key);
       e.data = Buffer.concat([e.data, pending.data]);
       e.casId = this.getNextCasID();
-      this._reply(connection, pending.cmdTokens, replies.STORED);
+      this._reply(connection, pending.cmdTokens, Replies.STORED);
     } else {
-      this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
+      this._reply(connection, pending.cmdTokens, Replies.NOT_STORED);
     }
   }
 
   // "prepend" means "add this data to an existing key before existing data".
-  cmd_prepend(pending, connection) {
+  cmd_prepend(pending: PendingData, connection: MemcacheConnection): void {
     const key = pending.cmdTokens[1];
     if (this._cache.has(key)) {
       const e = this._cache.get(key);
       e.data = Buffer.concat([pending.data, e.data]);
       e.casId = this.getNextCasID();
-      this._reply(connection, pending.cmdTokens, replies.STORED);
+      this._reply(connection, pending.cmdTokens, Replies.STORED);
     } else {
-      this._reply(connection, pending.cmdTokens, replies.NOT_STORED);
+      this._reply(connection, pending.cmdTokens, Replies.NOT_STORED);
     }
   }
 
@@ -343,17 +288,17 @@ class MemcacheServer {
 
   // cas <key> <flags> <exptime> <bytes> <cas unique> [noreply]\r\n
 
-  cmd_cas(pending, connection) {
+  cmd_cas(pending: PendingData, connection: MemcacheConnection): void {
     const key = pending.cmdTokens[1];
 
     if (!this._cache.has(key)) {
-      this._reply(connection, pending.cmdTokens, replies.NOT_FOUND);
+      this._reply(connection, pending.cmdTokens, Replies.NOT_FOUND);
     } else {
       const e = this._cache.get(key);
       if (`${e.casId}` === pending.cmdTokens[5]) {
         this._store(pending, connection);
       } else {
-        this._reply(connection, pending.cmdTokens, replies.EXISTS);
+        this._reply(connection, pending.cmdTokens, Replies.EXISTS);
       }
     }
   }
@@ -397,9 +342,9 @@ class MemcacheServer {
   // but deleted to make space for more items, or expired, or explicitly
   // deleted by a client).
 
-  cmd_get(cmdTokens, connection) {
+  cmd_get(cmdTokens: string[], connection: MemcacheConnection): void {
     const cache = this._cache;
-    const _get = (key) => {
+    const _get = (key: string) => {
       if (cache.has(key)) {
         const e = cache.get(key);
         const casId = cmdTokens[0] === "gets" ? ` ${e.casId}` : "";
@@ -416,10 +361,10 @@ class MemcacheServer {
     for (i = 1; i < cmdTokens.length; i++) {
       _get(cmdTokens[i]);
     }
-    this._reply(connection, cmdTokens, replies.END);
+    this._reply(connection, cmdTokens, Replies.END);
   }
 
-  cmd_gets(cmdTokens, connection) {
+  cmd_gets(cmdTokens: string[], connection: MemcacheConnection): void {
     return this.cmd_get(cmdTokens, connection);
   }
 
@@ -434,13 +379,13 @@ class MemcacheServer {
 
   // - "NOT_FOUND\r\n" to indicate that the item with this key was not
   //   found.
-  cmd_delete(cmdTokens, connection) {
+  cmd_delete(cmdTokens: string[], connection: MemcacheConnection): void {
     const key = cmdTokens[1];
     if (this._cache.has(key)) {
       this._cache.delete(key);
-      this._reply(connection, cmdTokens, replies.DELETED);
+      this._reply(connection, cmdTokens, Replies.DELETED);
     } else {
-      this._reply(connection, cmdTokens, replies.NOT_FOUND);
+      this._reply(connection, cmdTokens, Replies.NOT_FOUND);
     }
   }
 
@@ -470,10 +415,10 @@ class MemcacheServer {
   // - <value>\r\n , where <value> is the new value of the item's data,
   //   after the increment/decrement operation was carried out.
 
-  _IncrDecr(cmdTokens, connection, sign) {
+  _IncrDecr(cmdTokens: string[], connection: MemcacheConnection, sign: number): void {
     const key = cmdTokens[1];
     if (!this._cache.has(key)) {
-      this._reply(connection, cmdTokens, replies.NOT_FOUND);
+      this._reply(connection, cmdTokens, Replies.NOT_FOUND);
     } else {
       const delta = cmdTokens[2];
       if (delta && delta.match(/[+-]?[0-9]/g)) {
@@ -492,24 +437,24 @@ class MemcacheServer {
           this._reply(
             connection,
             cmdTokens,
-            `${replies.CLIENT_ERROR} cannot increment or decrement non-numeric value`
+            `${Replies.CLIENT_ERROR} cannot increment or decrement non-numeric value`
           );
         }
       } else {
         this._reply(
           connection,
           cmdTokens,
-          `${replies.CLIENT_ERROR} invalid numeric delta argument`
+          `${Replies.CLIENT_ERROR} invalid numeric delta argument`
         );
       }
     }
   }
 
-  cmd_incr(cmdTokens, connection) {
+  cmd_incr(cmdTokens: string[], connection: MemcacheConnection): void {
     return this._IncrDecr(cmdTokens, connection, 1);
   }
 
-  cmd_decr(cmdTokens, connection) {
+  cmd_decr(cmdTokens: string[], connection: MemcacheConnection): void {
     return this._IncrDecr(cmdTokens, connection, -1);
   }
 
@@ -531,14 +476,14 @@ class MemcacheServer {
   // - "NOT_FOUND\r\n" to indicate that the item with this key was not
   //   found.
 
-  cmd_touch(cmdTokens, connection) {
+  cmd_touch(cmdTokens: string[], connection: MemcacheConnection): void {
     const key = cmdTokens[1];
     if (!this._cache.has(key)) {
-      this._reply(connection, cmdTokens, replies.NOT_FOUND);
+      this._reply(connection, cmdTokens, Replies.NOT_FOUND);
     } else {
       const e = this._cache.get(key);
       e.lifetime = +cmdTokens[2];
-      this._reply(connection, cmdTokens, replies.TOUCHED);
+      this._reply(connection, cmdTokens, Replies.TOUCHED);
     }
   }
 
@@ -569,7 +514,9 @@ class MemcacheServer {
 
   // - "SAME [message]" must specify different source/dest ids.
 
-  _slabs_reassign(cmdTokens, connection) {}
+  _slabs_reassign(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
   // Slabs Automove
   // --------------
@@ -589,10 +536,12 @@ class MemcacheServer {
   //   there is an eviction. It is not recommended to run for very long in this
   //   mode unless your access patterns are very well understood.
 
-  _slabs_automove(cmdTokens, connection) {}
+  _slabs_automove(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
-  cmd_slabs(cmdTokens, connection) {
-    const x = this[`_slabs_${cmdTokens[1]}`];
+  cmd_slabs(cmdTokens: string[], connection: MemcacheConnection): void | undefined {
+    const x = (this as any)[`_slabs_${cmdTokens[1]}`];
     if (x) return x.call(this, cmdTokens, connection);
     return undefined;
   }
@@ -622,7 +571,9 @@ class MemcacheServer {
   // - "OK" to indicate a successful update of the settings.
 
   // - "ERROR [message]" to indicate a failure or improper arguments.
-  cmd_lru(cmdTokens, connection) {}
+  cmd_lru(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
   // LRU_Crawler
   // -----------
@@ -636,9 +587,13 @@ class MemcacheServer {
 
   // - "ERROR [message]" something went wrong while enabling or disabling.
 
-  _lru_crawler_enable(cmdTokens, connection) {}
+  _lru_crawler_enable(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
-  _lru_crawler_disable(cmdTokens, connection) {}
+  _lru_crawler_disable(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
   // lru_crawler sleep <microseconds>
 
@@ -652,7 +607,9 @@ class MemcacheServer {
 
   // - "CLIENT_ERROR [message]" indicating a format or bounds issue.
 
-  _lru_crawler_sleep(cmdTokens, connection) {}
+  _lru_crawler_sleep(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
   // lru_crawler tocrawl <32u>
 
@@ -666,7 +623,9 @@ class MemcacheServer {
 
   // - "CLIENT_ERROR [message]" indicating a format or bound issue.
 
-  _lru_crawler_tocrawl(cmdTokens, connection) {}
+  _lru_crawler_tocrawl(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
   // lru_crawler crawl <classid,classid,classid|all>
 
@@ -686,7 +645,9 @@ class MemcacheServer {
 
   // - "BADCLASS [message]" to indicate an invalid class was specified.
 
-  _lru_crawler_crawl(cmdTokens, connection) {}
+  _lru_crawler_crawl(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
   // lru_crawler metadump <classid,classid,classid|all>
 
@@ -711,10 +672,12 @@ class MemcacheServer {
 
   // - "BADCLASS [message]" to indicate an invalid class was specified.
 
-  _lru_crawler_metadump(cmdTokens, connection) {}
+  _lru_crawler_metadump(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
-  cmd_lru_crawler(cmdTokens, connection) {
-    const x = this[`_lru_crawler_${cmdTokens[1]}`];
+  cmd_lru_crawler(cmdTokens: string[], connection: MemcacheConnection): void {
+    const x = (this as any)[`_lru_crawler_${cmdTokens[1]}`];
     if (x) return x.call(this, cmdTokens, connection);
     return undefined;
   }
@@ -756,7 +719,9 @@ class MemcacheServer {
   //   cache. Useful in seeing if items being evicted were actually used, and which
   //   keys are getting removed.
 
-  cmd_watch(cmdTokens, connection) {}
+  cmd_watch(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
   // Statistics
   // ----------
@@ -785,12 +750,12 @@ class MemcacheServer {
 
   // END\r\n
 
-  cmd_stats(cmdTokens, connection) {
+  cmd_stats(_cmdTokens: string[], connection: MemcacheConnection): void {
     connection.send(
       [
         "STAT foo bar",
         "STAT hello world",
-        `STAT connection ${connection._id}`,
+        `STAT connection ${connection.getId()}`,
         `STAT port ${this._port}`,
         "END",
       ].join("\r\n")
@@ -831,7 +796,9 @@ class MemcacheServer {
   // the limit is lower, and slabs_reassign+automove are enabled, free memory may
   // be released back to the OS asynchronously.
 
-  cmd_flush_all(cmdTokens, connection) {}
+  cmd_flush_all(_cmdTokens: string[], _connection: MemcacheConnection): void {
+    // TODO: define if needed
+  }
 
   // "version" is a command with no arguments:
 
@@ -842,7 +809,7 @@ class MemcacheServer {
   // "VERSION <version>\r\n", where <version> is the version string for the
   // server.
 
-  cmd_version(cmdTokens, connection) {
+  cmd_version(cmdTokens: string[], connection: MemcacheConnection): void {
     this._reply(connection, cmdTokens, "VERSION 0.0.1");
   }
 
@@ -851,8 +818,8 @@ class MemcacheServer {
   // as the last parameter). Its effect is to set the verbosity level of
   // the logging output.
 
-  cmd_verbosity(cmdTokens, connection) {
-    this._reply(connection, cmdTokens, replies.OK);
+  cmd_verbosity(cmdTokens: string[], connection: MemcacheConnection): void {
+    this._reply(connection, cmdTokens, Replies.OK);
   }
 
   // "quit" is a command with no arguments:
@@ -862,23 +829,21 @@ class MemcacheServer {
   // Upon receiving this command, the server closes the
   // connection. However, the client may also simply close the connection
   // when it no longer needs it, without issuing this command.
-  cmd_quit(cmdTokens, connection) {
+  cmd_quit(_cmdTokens: string[], connection: MemcacheConnection): void {
     this.end(connection);
   }
 
-  end(connection) {
+  end(connection: MemcacheConnection): void {
     connection.close();
-    this._clients.delete(connection._id);
+    this._clients.delete(connection.getId());
   }
 
-  shutdown() {
+  shutdown(): void {
     this._clients.forEach((x) => {
       x.connection.close();
     });
     this._clients.clear();
-    this._server.close();
+    this._server?.close();
     this.logger.info("server shutdown");
   }
 }
-
-module.exports = MemcacheServer;

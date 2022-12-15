@@ -5,7 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo 'TODO: migrate tests to @xarch/dev' && exit 0"
+    "build": "tsc",
+    "coverage": "xrun xarc/test-cov",
+    "lint": "xrun xarc/lint",
+    "prepublishOnly": "(cd ../../ && npm run prepublishOnly)",
+    "test": "npm run lint && xrun xarc/test-only"
   },
   "repository": {
     "type": "git",
@@ -21,31 +25,21 @@
   "author": "Joel Chen <joel123@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "bluebird": "3.5.0",
-    "memcache-parser": "0.2.7"
+    "memcache-parser": "^1.0.0"
   },
   "devDependencies": {
+    "@types/memcached": "2.2.7",
     "memcached": "2.2.2"
   },
-  "nyc": {
-    "all": true,
-    "reporter": [
-      "lcov",
-      "text",
-      "text-summary"
-    ],
-    "exclude": [
-      "coverage",
-      "*clap.js",
-      "gulpfile.js",
-      "dist",
-      "test"
-    ],
-    "check-coverage": true,
-    "statements": 51.6,
-    "branches": 27.7,
-    "functions": 43.7,
-    "lines": 52.8,
-    "cache": true
+  "@xarc/module-dev": {
+    "features": [
+      "eslint",
+      "eslintTS",
+      "jest",
+      "jestTS",
+      "prettier",
+      "typedoc",
+      "typescript"
+    ]
   }
 }
