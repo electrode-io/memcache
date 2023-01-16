@@ -5,6 +5,7 @@ import memcached, { MemcachedServer } from "memcached-njs";
 import { uniq } from "lodash";
 import { expect } from "@jest/globals";
 import NullLogger from "../../lib/null-logger";
+import { AddressInfo } from "net";
 
 const getPortFromStats = (stat: StatsCommandResponse) => {
   const portStat = stat.STAT.find((j: string[]) => j[0] === "port");
@@ -29,7 +30,7 @@ describe("redundant servers", function () {
       .then(async (servers: Promise<MemcachedServer>[]) => {
         memcachedServers = await Promise.all(servers);
 
-        const ports = memcachedServers.map((s) => s._server.address().port);
+        const ports = memcachedServers.map((s) => (s._server?.address() as AddressInfo).port);
         const serversUrls = ports.map((p) => ({ server: `localhost:${p}`, maxConnections: 3 }));
 
         const x = new MemcacheClient({
@@ -67,7 +68,7 @@ describe("redundant servers", function () {
       .then(async (servers: Promise<MemcachedServer>[]) => {
         memcachedServers = await Promise.all(servers);
 
-        const ports = memcachedServers.map((s) => s._server.address().port);
+        const ports = memcachedServers.map((s) => (s._server?.address() as AddressInfo).port);
         const serversUrls = ports.map((p) => ({ server: `localhost:${p}`, maxConnections: 3 }));
 
         const x = new MemcacheClient({
@@ -107,7 +108,7 @@ describe("redundant servers", function () {
       .then(async (servers: Promise<MemcachedServer>[]) => {
         memcachedServers = await Promise.all(servers);
 
-        const ports = memcachedServers.map((s) => s._server.address().port);
+        const ports = memcachedServers.map((s) => (s._server?.address() as AddressInfo).port);
         const serversUrls = ports.map((p) => ({ server: `localhost:${p}`, maxConnections: 3 }));
 
         const x = new MemcacheClient({
