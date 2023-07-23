@@ -167,7 +167,8 @@ const options = {
   connectTimeout: 8000, // connect to server timeout in ms
   compressor: require("custom-compressor"),
   logger: require("./custom-logger"),
-  Promise
+  Promise,
+  tls: {}
 };
 
 const client = new MemcacheClient(options);
@@ -192,6 +193,7 @@ const client = new MemcacheClient(options);
 -   `compressor` - **_optional_** a custom compressor for compressing the data.  See [data compression](#data-compression) for more details.
 -   `logger` - **_optional_** Custom logger like this:
 -   `Promise` - **_optional_** Internally this module will try to find `bluebird` in your `node_modules` and fallback to `global.Promise`.  You can set this option to force the Promise to use.
+-   `tls` - **_optional_** If set, defines the TLS options to make the client connect to server in TLS mode
 
 ```js
 module.exports = {
@@ -268,6 +270,41 @@ You can also pass in `server.config` with the following options:
 -   `retryFailedServerInterval` - (ms) how often to check failed servers.  Default 10000 ms (10 secs)
 -   `failedServerOutTime` - (ms) how long a failed server should be out before retrying it.  Default 60000 ms (1 min).
 -   `keepLastServer` - (boolean) Keep at least one server even if it failed connection.  Default `true`.
+
+### TLS / SSL
+
+If the memcached server is configured with TLS, you can make the client connect to it via specifying the `tls` ConnectionOptions.
+
+For production environments, the server should be using a TLS certificate that is signed by a trusted public CA. In
+this case you can simply do the following to create the client:
+
+```js
+const client = new MemcacheClient({server: "{server_hostname}:11211", tls: {}});
+client.set("key", "value");
+```
+
+If the server requires client certificate authentication, you can do the following:
+
+```js
+import Fs from "fs";
+const client = new MemcacheClient({server: "{server_hostname}:11211", tls: {
+  key: Fs.readFileSync("client-key.pem"),
+  cert: Fs.readFileSync("client-cert.pem"),
+}});
+client.set("key", "value");
+```
+
+If you are running the server with a self-signed certificate (i.e. for local developments), you can create the client
+by specifying the CA certificate and disable hostname verification as follows:
+
+```js
+import Fs from "fs";
+const client = new MemcacheClient({server: "localhost:11211", tls: {
+  ca: Fs.readFileSync("ca-cert.pem"),
+  checkServerIdentity: () => {return undefined;}
+}});
+client.set("key", "value");
+```
 
 ### Data Compression
 

@@ -1,3 +1,4 @@
+import { ConnectionOptions } from "tls";
 import { MemcacheConnection } from "./lib/connection";
 
 export type CommandCallback = (conn: MemcacheConnection) => void;
@@ -49,6 +50,7 @@ export type MemcacheClientOptions = {
   compressor?: CompressorLibrary;
   logger?: any;
   Promise?: PromiseConstructor;
+  tls?: ConnectionOptions;
 };
 
 // connection

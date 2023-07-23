@@ -1,4 +1,5 @@
 import Net, { Socket } from "net";
+import Tls from "tls";
 import assert from "assert";
 import { optionalRequire } from "optional-require";
 
@@ -103,7 +104,18 @@ export class MemcacheConnection extends MemcacheParser {
     assert(host, "Must provide server hostname");
     assert(typeof port === "number" && port > 0, "Must provide valid server port");
 
-    const socket = Net.createConnection({ host, port });
+    let socket: Net.Socket | Tls.TLSSocket;
+    if (this.client?.options?.tls !== undefined) {
+      // Create a TLS connection
+      socket = Tls.connect({
+          host: host,
+          port: port,
+          ...this.client.options.tls
+        });
+    } else {
+      // Create a regular TCP connection
+      socket = Net.createConnection({ host, port });
+    }
     this._connectPromise = new Promise((resolve: ResolveCallback, reject: RejectCallback) => {
       this._status = Status.CONNECTING;
 
