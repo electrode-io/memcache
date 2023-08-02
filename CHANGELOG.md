@@ -1,5 +1,13 @@
 # Change Log. 
 
+## (2023-07-24)
+
+### Features
+
+* **memcache-client:**   
+   * add TLS support which allows secure connection to a remote memcached server with TLS enabled
+   * add new client test cases for TLS
+
 ## (2022-09-07)
 
 ### Features  

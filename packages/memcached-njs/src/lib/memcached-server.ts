@@ -1,5 +1,6 @@
 /* eslint-disable no-console,no-magic-numbers,no-var,camelcase,no-unused-vars,max-statements */
 import net, { Server, AddressInfo, Socket } from "net";
+import tls, { TlsOptions } from "tls";
 import { DefaultLogger, PendingData } from "../types";
 import MemcacheConnection from "./memcache-connection";
 
@@ -29,6 +30,7 @@ export type MemcacheServerOptions = {
   port?: number | string | undefined;
   logger?: any;
   compress?: boolean | undefined;
+  tls?: TlsOptions;
 };
 
 export class MemcachedServer {
@@ -55,8 +57,13 @@ export class MemcachedServer {
   }
 
   startup(): Promise<MemcachedServer> {
-    const server = net.createServer();
-    server.on("connection", this.newConnection.bind(this));
+    let server: net.Server | tls.Server;
+    if (this.options.tls !== undefined) {
+      server = tls.createServer(this.options.tls, this.newConnection.bind(this));
+    } else {
+      server = net.createServer();
+      server.on("connection", this.newConnection.bind(this));
+    }
     this._server = server;
     return new Promise((resolve, reject) => {
       server.once("error", (err) => {
@@ -66,7 +73,6 @@ export class MemcachedServer {
 
       server.listen(this.options.port, () => {
         this._port = (server.address() as AddressInfo).port;
-
         this.logger.info(`server listening at port ${this._port}`);
         server.removeAllListeners("error");
         server.on("error", this._onError.bind(this));

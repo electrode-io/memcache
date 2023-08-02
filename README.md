@@ -14,6 +14,7 @@ NodeJS memcached client with the most efficient ASCII protocol parser.
 -   APIs Support callback or Promise
 -   Support fire and forget requests
 -   Support multiple connections
+-   Support TLS connections
 
 ## Packages
 
@@ -30,6 +31,7 @@ This repo uses [lerna](https://lernajs.io/) to manage multiple packages.
 3. run `npm ci`
 4. run `npm run bootstrap`
 5. optional: just to make sure everything is fine run `npm run build` and check if there's no error using that command
+6. Testing: run `npm test`
 ## Publishing notes
 - Recommended publish flow is to publish the modules individually using `npm publish`, can be improved to use lerna in the future
 
