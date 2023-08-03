@@ -1,6 +1,6 @@
 {
   "name": "memcache-client",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "NodeJS memcached client",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@types/lodash.defaults": "4.2.7",
     "lodash": "4.17.21",
-    "memcached-njs": "^1.0.0",
+    "memcached-njs": "^1.0.1",
     "source-map-support": "0.5.19",
     "zstd.ts": "1.1.3"
   },
