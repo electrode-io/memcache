@@ -17,6 +17,7 @@ Primary developed to be used at [@WalmartLabs](http://www.walmartlabs.com/) to p
 -   APIs Support callback or Promise
 -   Support fire and forget requests
 -   Support multiple connections
+-   Support TLS connections
 
 ## Install
 
