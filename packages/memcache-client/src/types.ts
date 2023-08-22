@@ -43,6 +43,7 @@ export type MemcacheClientOptions = {
   server: ServerDefinition | SingleServerEntry | MultipleServerEntry | string;
   ignoreNotStored?: boolean;
   lifetime?: number;
+  noDelay?: boolean;
   cmdTimeout?: number;
   connectTimeout?: number;
   keepDangleSocket?: boolean;

@@ -166,6 +166,7 @@ const options = {
   lifetime: 100, // TTL 100 seconds
   cmdTimeout: 3000, // command timeout in milliseconds
   connectTimeout: 8000, // connect to server timeout in ms
+  noDelay: true, // whether to enable TCP_NODELAY on connections
   compressor: require("custom-compressor"),
   logger: require("./custom-logger"),
   Promise,
@@ -185,6 +186,7 @@ const client = new MemcacheClient(options);
 
 -   `ignoreNotStored` - **_optional_** If set to true, then will not treat `NOT_STORED` reply from any store commands as error.  Use this for [Mcrouter AllAsyncRoute] mode.
 -   `lifetime` - **_optional_** Your cache TTL in **_seconds_** to use for all entries.  DEFAULT: 60 seconds.
+-   `noDelay` - **_optional_** Whether to enable `TCP_NODELAY` on connections to decrease latency. DEFAULT: false
 -   `cmdTimeout` - **_optional_** Command timeout in milliseconds.  DEFAULT: 5000 ms.
     -   If a command didn't receive response before this timeout value, then it will cause the connection to shutdown and returns Error.
 -   `connectTimeout` - **_optional_** Custom self connect to server timeout in milliseconds.  It's disabled if set to 0.  DEFAULT: 0
