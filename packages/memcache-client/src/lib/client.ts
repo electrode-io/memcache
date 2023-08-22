@@ -144,12 +144,11 @@ export class MemcacheClient extends EventEmitter {
   ): Promise<Response> {
     return this.send(
       (socket) => {
-        socket?.write(data);
-        if (options && options.noreply) {
-          socket?.write(" noreply\r\n");
-        } else {
-          socket?.write("\r\n");
+        let line = data;
+        if (options?.noreply) {
+          line += " noreply";
         }
+        socket?.write(`${line}\r\n`);
       },
       options,
       callback
@@ -318,10 +317,11 @@ export class MemcacheClient extends EventEmitter {
         (options as Partial<CasCommandOptions>)?.compress === true
       );
       const bytes = Buffer.byteLength(packed.data);
-      const msg = `${cmd} ${key} ${packed.flag} ${lifetime} ${bytes}${casUniq}${noreply}\r\n`;
-      socket?.write(msg);
-      socket?.write(packed.data);
-      socket?.write("\r\n");
+      socket?.write(Buffer.concat([
+        Buffer.from(`${cmd} ${key} ${packed.flag} ${lifetime} ${bytes}${casUniq}${noreply}\r\n`),
+        Buffer.isBuffer(packed.data) ? packed.data : Buffer.from(packed.data),
+        Buffer.from("\r\n"),
+      ]));
     };
 
     return this._callbackSend(_data, options, callback) as unknown as Promise<string[]>;
