@@ -193,17 +193,17 @@ const client = new MemcacheClient(options);
 -   `dangleSocketWaitTimeout` - **_optional_** How long to wait for errors on dangle socket before destroying it.  DEFAULT: 5 minutes (30000 milliseconds)
 -   `compressor` - **_optional_** a custom compressor for compressing the data.  See [data compression](#data-compression) for more details.
 -   `logger` - **_optional_** Custom logger like this:
+    ```js
+    module.exports = {
+      debug: (msg) => console.log(msg),
+      info: (msg) => console.log(msg),
+      warn: (msg) => console.warn(msg),
+      error: (msg) => console.error(msg)
+    };
+    ```
 -   `Promise` - **_optional_** Internally this module will try to find `bluebird` in your `node_modules` and fallback to `global.Promise`.  You can set this option to force the Promise to use.
 -   `tls` - **_optional_** If set, defines the TLS options to make the client connect to server in TLS mode
 
-```js
-module.exports = {
-  debug: (msg) => console.log(msg),
-  info: (msg) => console.log(msg),
-  warn: (msg) => console.warn(msg),
-  error: (msg) => console.error(msg)
-};
-```
 
 #### `connectTimeout`
 
