@@ -342,6 +342,10 @@ export class MemcacheConnection extends MemcacheParser {
   }
 
   _setupConnection(socket: Socket): void {
+    if (this.client?.options?.noDelay) {
+      socket.setNoDelay(true);
+    }
+
     socket.on("data", this.onData.bind(this));
 
     socket.on("end", () => {

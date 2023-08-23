@@ -14,7 +14,7 @@ import Path from "path";
 import { text1, text2, poem1, poem2, poem3, poem4, poem5 } from "../data/text";
 import NullLoger from "../../lib/null-logger";
 import memcached, { MemcachedServer } from "memcached-njs";
-import { AddressInfo } from "net";
+import { AddressInfo, Socket } from "net";
 
 describe("memcache client", function () {
   process.on("unhandledRejection", (e) => {
@@ -277,6 +277,40 @@ describe("memcache client", function () {
           done();
         });
     });
+  });
+
+  it("should not enable TCP_NODELAY by default", async () => {
+    await startSingleServer();
+
+    const _setNoDelay = Socket.prototype.setNoDelay;
+    const mockNoDelay = jest.fn();
+
+    try {
+      Socket.prototype.setNoDelay = mockNoDelay;
+      const x = new MemcacheClient({ server: server });
+      await x.set("foo", "bar");
+    } finally {
+      Socket.prototype.setNoDelay = _setNoDelay;
+    }
+
+    expect(mockNoDelay).not.toHaveBeenCalled();
+  });
+
+  it("should enable TCP_NODELAY when options.noDelay is true", async () => {
+    await startSingleServer();
+
+    const _setNoDelay = Socket.prototype.setNoDelay;
+    const mockNoDelay = jest.fn();
+
+    try {
+      Socket.prototype.setNoDelay = mockNoDelay;
+      const x = new MemcacheClient({ server: server, noDelay: true });
+      await x.set("foo", "bar");
+    } finally {
+      Socket.prototype.setNoDelay = _setNoDelay;
+    }
+
+    expect(mockNoDelay).toHaveBeenCalled();
   });
 
   const testMulti = (maxConnections: number = 1, done: () => void) => {
