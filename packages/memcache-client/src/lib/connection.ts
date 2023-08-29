@@ -342,6 +342,16 @@ export class MemcacheConnection extends MemcacheParser {
   }
 
   _setupConnection(socket: Socket): void {
+    const keepAlive = this.client?.options?.keepAlive;
+
+    if (keepAlive !== false) {
+      const initialDelay = typeof keepAlive === "number" && Number.isFinite(keepAlive)
+        ? keepAlive
+        : 60000;
+
+      socket.setKeepAlive(true, initialDelay);
+    }
+
     if (this.client?.options?.noDelay) {
       socket.setNoDelay(true);
     }
