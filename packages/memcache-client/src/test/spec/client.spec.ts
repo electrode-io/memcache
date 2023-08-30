@@ -280,34 +280,32 @@ describe("memcache client", function () {
   });
 
   it("should not enable TCP_NODELAY by default", async () => {
-    await startSingleServer();
-
     const _setNoDelay = Socket.prototype.setNoDelay;
     const mockNoDelay = jest.fn();
+    const x = new MemcacheClient({ server });
 
     try {
       Socket.prototype.setNoDelay = mockNoDelay;
-      const x = new MemcacheClient({ server: server });
       await x.set("foo", "bar");
     } finally {
       Socket.prototype.setNoDelay = _setNoDelay;
+      x.shutdown();
     }
 
     expect(mockNoDelay).not.toHaveBeenCalled();
   });
 
   it("should enable TCP_NODELAY when options.noDelay is true", async () => {
-    await startSingleServer();
-
     const _setNoDelay = Socket.prototype.setNoDelay;
     const mockNoDelay = jest.fn();
+    const x = new MemcacheClient({ server, noDelay: true });
 
     try {
       Socket.prototype.setNoDelay = mockNoDelay;
-      const x = new MemcacheClient({ server: server, noDelay: true });
       await x.set("foo", "bar");
     } finally {
       Socket.prototype.setNoDelay = _setNoDelay;
+      x.shutdown();
     }
 
     expect(mockNoDelay).toHaveBeenCalled();
