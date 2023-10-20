@@ -133,6 +133,9 @@ client.cmd("incr foo 5", { noreply: true });
 // send any arbitrary data (remember \r\n)
 
 client.send("set foo 0 0 5\r\nhello\r\n").then((r) => assert.deepEqual(r, ["STORED"]));
+
+// disconnect from the memcached server(s)
+client.shutdown();
 ```
 
 ## Commands with a method
@@ -361,6 +364,7 @@ For the `cas` command, `options` must contain a `casUniq` value that you receive
 -   `client.store(cmd, key, value, [optons], [callback])`
 -   `client.retrieve<ReturnValueType>(cmd, key, [options], [callback])`
 -   `client.xretrieve(cmd, key)`
+-   `client.shutdown()`
 
 ## License
 
