@@ -166,6 +166,7 @@ const options = {
   lifetime: 100, // TTL 100 seconds
   cmdTimeout: 3000, // command timeout in milliseconds
   connectTimeout: 8000, // connect to server timeout in ms
+  keepAlive: 120000, // keepalive initial delay in ms, or `false` to disable
   noDelay: true, // whether to enable TCP_NODELAY on connections
   compressor: require("custom-compressor"),
   logger: require("./custom-logger"),
@@ -191,6 +192,7 @@ const client = new MemcacheClient(options);
     -   If a command didn't receive response before this timeout value, then it will cause the connection to shutdown and returns Error.
 -   `connectTimeout` - **_optional_** Custom self connect to server timeout in milliseconds.  It's disabled if set to 0.  DEFAULT: 0
     -   The error object from this will have `connecting` set to `true`
+-   `keepAlive` - **_optional_** Initial delay (in milliseconds) between the last data packet received on a connection and when a keepalive probe should be sent, or `false` to disable the `SO_KEEPALIVE` socket option entirely.  DEFAULT: 1 minute (60000 milliseconds)
 -   `keepDangleSocket` - **_optional_** After `connectTimeout` trigger, do not destroy the socket but keep listening for errors on it.  DEFAULT: false
 -   `dangleSocketWaitTimeout` - **_optional_** How long to wait for errors on dangle socket before destroying it.  DEFAULT: 5 minutes (30000 milliseconds)
 -   `compressor` - **_optional_** a custom compressor for compressing the data.  See [data compression](#data-compression) for more details.

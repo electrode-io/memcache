@@ -46,6 +46,7 @@ export type MemcacheClientOptions = {
   noDelay?: boolean;
   cmdTimeout?: number;
   connectTimeout?: number;
+  keepAlive?: number | false;
   keepDangleSocket?: boolean;
   dangleSocketWaitTimeout?: number;
   compressor?: CompressorLibrary;

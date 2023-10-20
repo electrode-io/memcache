@@ -279,35 +279,81 @@ describe("memcache client", function () {
     });
   });
 
-  it("should not enable TCP_NODELAY by default", async () => {
-    await startSingleServer();
+  it("should enable SO_KEEPALIVE with an initial delay of 60000 ms by default", async () => {
+    const _setKeepAlive = Socket.prototype.setKeepAlive;
+    const mockKeepAlive = jest.fn();
+    const x = new MemcacheClient({ server });
 
+    try {
+      Socket.prototype.setKeepAlive = mockKeepAlive;
+      await x.set("foo", "bar");
+    } finally {
+      Socket.prototype.setKeepAlive = _setKeepAlive;
+      x.shutdown();
+    }
+
+    expect(mockKeepAlive).toHaveBeenCalledWith(true, 60000);
+  });
+
+  it("should enable SO_KEEPALIVE with a custom initial delay when the keepAlive client option is a number", async () => {
+    const _setKeepAlive = Socket.prototype.setKeepAlive;
+    const mockKeepAlive = jest.fn();
+    const x = new MemcacheClient({ server, keepAlive: 10000 });
+
+    try {
+      Socket.prototype.setKeepAlive = mockKeepAlive;
+      await x.set("foo", "bar");
+    } finally {
+      Socket.prototype.setKeepAlive = _setKeepAlive;
+      x.shutdown();
+    }
+
+    expect(mockKeepAlive).toHaveBeenCalledWith(true, 10000);
+  });
+
+  it("should not enable SO_KEEPALIVE when the keepAlive client option is `false`", async () => {
+    const _setKeepAlive = Socket.prototype.setKeepAlive;
+    const mockKeepAlive = jest.fn();
+    const x = new MemcacheClient({ server, keepAlive: false });
+
+    try {
+      Socket.prototype.setKeepAlive = mockKeepAlive;
+      await x.set("foo", "bar");
+    } finally {
+      Socket.prototype.setKeepAlive = _setKeepAlive;
+      x.shutdown();
+    }
+
+    expect(mockKeepAlive).not.toHaveBeenCalled();
+  });
+
+  it("should not enable TCP_NODELAY by default", async () => {
     const _setNoDelay = Socket.prototype.setNoDelay;
     const mockNoDelay = jest.fn();
+    const x = new MemcacheClient({ server });
 
     try {
       Socket.prototype.setNoDelay = mockNoDelay;
-      const x = new MemcacheClient({ server: server });
       await x.set("foo", "bar");
     } finally {
       Socket.prototype.setNoDelay = _setNoDelay;
+      x.shutdown();
     }
 
     expect(mockNoDelay).not.toHaveBeenCalled();
   });
 
   it("should enable TCP_NODELAY when options.noDelay is true", async () => {
-    await startSingleServer();
-
     const _setNoDelay = Socket.prototype.setNoDelay;
     const mockNoDelay = jest.fn();
+    const x = new MemcacheClient({ server, noDelay: true });
 
     try {
       Socket.prototype.setNoDelay = mockNoDelay;
-      const x = new MemcacheClient({ server: server, noDelay: true });
       await x.set("foo", "bar");
     } finally {
       Socket.prototype.setNoDelay = _setNoDelay;
+      x.shutdown();
     }
 
     expect(mockNoDelay).toHaveBeenCalled();
