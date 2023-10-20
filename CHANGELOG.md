@@ -1,5 +1,14 @@
 # Change Log. 
 
+## (2023-10-20)
+
+### Features
+
+* **memcache-client:**   
+   * add noDelay option which allows whether to enable `TCP_NODELAY` on connections to decrease latency
+   * add keepAlive option and enable SO_KEEPALIVE by default
+   * add new client test cases for noDelay and keepAlive options
+
 ## (2023-07-24)
 
 ### Features
